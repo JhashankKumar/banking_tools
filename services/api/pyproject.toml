@@ -1,0 +1,42 @@
+[project]
+name = "openfraud-api"
+version = "0.1.0"
+description = "OpenFraud Investigator backend API (FastAPI)."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.144.0",
+    "pydantic-settings==2.16.0",
+    "uvicorn[standard]==0.54.0",
+]
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "httpx2==2.13.1",
+    "pyright==1.1.414",
+    "pytest==9.1.1",
+    "ruff==0.17.1",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "N"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.pyright]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+include = ["app", "tests"]
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
