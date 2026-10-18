@@ -1,2 +1,2 @@
-# banking_tools
+# openfraud-investigator
 AI tools for banking
