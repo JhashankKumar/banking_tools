@@ -4,7 +4,7 @@
 The LLM is an explanation and tool-selection layer, not the source of truth and not the authorization authority.
 
 ## Model provider
-Use OpenRouter as the initial hosted model gateway. It provides an OpenAI-compatible chat completions API, but each model can differ in tool-call behavior and supported features.
+Use OpenRouter as the hosted model gateway, calling open-weight models only. It provides an OpenAI-compatible chat completions API, but each model can differ in tool-call behavior and supported features.
 
 Define a small `ModelProvider` contract for:
 - sending messages and declared tool definitions to the model,
@@ -19,12 +19,12 @@ Implementation guidance:
 - Keep model-specific code out of domain services. The application should depend on the provider interface.
 - Support a deterministic fake provider so tests do not require a live API key or incur model costs.
 - Test the exact chosen model's tool-call support and malformed-tool-call behavior before relying on it.
-- Keep Ollama as an optional future adapter, not a required part of the first version.
 
 ## OpenRouter privacy and cost
 - Send only synthetic data in this public demo.
 - Review both OpenRouter's current privacy settings and the selected downstream provider's policy before sending any sensitive information.
 - Consider the supported `provider.data_collection="deny"` and/or `provider.zdr=true` request controls where appropriate. These restrict routing to eligible endpoints; they do not make the request local or guarantee that every other system in your application stores nothing.
+- Rate-limit investigation requests per authenticated user and per client IP; return HTTP 429 with a retry hint. Enforce a daily token/cost budget so a public demo cannot exhaust the API key.
 - Set reasonable request/token limits, timeouts, and application-level usage controls. Track usage metadata and cost without logging raw sensitive prompts by default.
 
 ## Tool contract
@@ -91,6 +91,6 @@ Threats include:
 
 ## Demo roles
 - Analyst: permitted synthetic cases and investigation tools.
-- Supervisor: review/approve demo case status transitions.
+- Supervisor: review/approve demo case status transitions; create, update, and deactivate users.
 - Auditor: read permitted audit events.
 These are demonstration roles only. Make the demo authentication limitations explicit. Do not claim production compliance or certification.

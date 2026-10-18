@@ -1,6 +1,6 @@
 # Claude Code Master Prompt — OpenFraud Investigator
 
-You are the senior engineer helping implement **OpenFraud Investigator**, an open-source, local-first AI copilot for fraud investigation. Read all knowledge-base files in this folder before changing code. Treat them as the project specification and engineering guardrails.
+You are the senior engineer helping implement **OpenFraud Investigator**, an open-source, self-hostable AI copilot for fraud investigation. Read all knowledge-base files in `docs/project/` and `docs/banking-domain/` before changing code. Treat them as the project specification and engineering guardrails.
 
 ## Project identity
 - Repository: `openfraud-investigator`
@@ -21,7 +21,8 @@ Act as a pragmatic staff-level full-stack engineer and security-minded reviewer.
 - `AI_AGENT_AND_SECURITY.md`
 - `TESTING_AND_EVALUATION.md`
 - `IMPLEMENTATION_PLAN.md`
-- `banking-domain/README.md` and every Markdown file inside `banking-domain/`
+- `docs/banking-domain/README.md` and every Markdown file inside `docs/banking-domain/`
+- `docs/decisions/` (accepted decisions override older wording elsewhere)
 
 If these files are not present in the repository context, ask me to provide them rather than inventing project decisions.
 
@@ -31,7 +32,7 @@ If these files are not present in the repository context, ask me to provide them
 - Data: PostgreSQL; decimal-safe money; UTC timestamps.
 - Graph: NetworkX for MVP, bounded deterministic graph traversal.
 - Detection: transparent Python rules first; scikit-learn baseline only after dataset/labels are defined.
-- AI: OpenRouter as the initial hosted model gateway through its OpenAI-compatible API; use a verified tool-calling-capable model, configurable with `OPENROUTER_MODEL`. Keep it behind a `ModelProvider` interface and implement a custom bounded tool harness with Pydantic schemas. Ollama may be added later as an optional adapter. Use LangGraph only if justified.
+- AI: OpenRouter as the initial hosted model gateway through its OpenAI-compatible API; use a verified tool-calling-capable open-weight model only (no proprietary models), configurable with `OPENROUTER_MODEL`. Keep it behind a `ModelProvider` interface and implement a custom bounded tool harness with Pydantic schemas. Use LangGraph only if justified.
 - Delivery: Docker Compose and GitHub Actions.
 - Use stable compatible versions, lock dependencies, and document tested versions. Do not use canary versions without a concrete reason.
 

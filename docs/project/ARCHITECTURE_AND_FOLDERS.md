@@ -86,7 +86,7 @@ openfraud-investigator/
 │   ├── threat-model.md
 │   ├── benchmark-results.md
 │   └── decisions/
-│       └── 0001-modular-monolith.md
+│       └── 0001-initial-project-decisions.md
 ├── scripts/
 │   ├── seed_demo_data.py
 │   └── verify_environment.py
