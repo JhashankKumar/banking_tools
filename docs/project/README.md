@@ -13,12 +13,12 @@ This folder captures the project decisions and development rules agreed so far. 
 - `TESTING_AND_EVALUATION.md` — testing strategy, synthetic scenarios, and metrics.
 - `IMPLEMENTATION_PLAN.md` — incremental implementation milestones.
 - `CLAUDE_MASTER_PROMPT.md` — copy this prompt into Claude Code to start development.
-- `banking-domain/` — banking concepts, payment semantics, fraud investigation workflow, India regulatory context, synthetic casebook, AI domain guardrails, and official source register.
+- `../banking-domain/` — banking concepts, payment semantics, fraud investigation workflow, India regulatory context, synthetic casebook, AI domain guardrails, and official source register.
 
 ## How to use
 
 1. Create a GitHub repository named `openfraud-investigator`.
-2. Put this knowledge-base folder in the repository, or provide these files to Claude as project context.
+2. These files live in `docs/project/` and `docs/banking-domain/`; accepted decisions are in `docs/decisions/`. Provide them to Claude as project context.
 3. Open `CLAUDE_MASTER_PROMPT.md`, copy its contents into Claude Code, and ask Claude to begin with Milestone 0 and then implement one milestone at a time.
 4. Ask Claude to inspect the existing repository before editing files. It must not overwrite existing work without explaining the change.
 5. Review all generated code, run the tests, and inspect security-sensitive logic yourself.
