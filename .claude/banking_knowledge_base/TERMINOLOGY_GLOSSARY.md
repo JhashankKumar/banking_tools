@@ -1,0 +1,28 @@
+# Banking and Fraud Investigation Glossary
+
+- **Account:** A bank product relationship used to record deposits, payments, credit, or other activity.
+- **Alert:** A signal that activity or data meets a rule/model/source condition; not a finding of fraud.
+- **AML:** Anti-money laundering controls, obligations, and processes under applicable law and institutional policy.
+- **Audit trail:** Records of actions and access, including actor, resource, time, result, and trace ID.
+- **Available balance:** Funds available under account rules; not necessarily equal to ledger balance.
+- **Beneficiary/payee:** Intended recipient of a payment.
+- **Case:** Investigation work item that organizes alerts, evidence, analysis, notes, and disposition.
+- **CBS (Core Banking System):** A bank's core platform for maintaining accounts and related banking records; exact architecture varies.
+- **CIF/customer ID:** Institution-specific customer identifier; terminology and semantics vary.
+- **Clearing:** Exchange/processing of payment instructions and obligations between participants.
+- **EWS (Early Warning Signals):** Indicators used to identify accounts/transactions warranting closer review. RBI's 2024 fraud risk directions discuss EWS frameworks within their scope.
+- **Evidence:** Source record or reproducible derivation used to support or challenge a claim.
+- **Fraud:** A classification that depends on facts, process, applicable law and institutional rules; an alert alone is not proof.
+- **Graph edge:** Directed relationship between entities, such as a transaction, with provenance and event details.
+- **Ledger balance:** Balance derived from posted accounting entries under a defined ledger model.
+- **Mule account:** Informal term for an account used to receive or move proceeds associated with wrongdoing; do not apply this label solely from a heuristic.
+- **Network reference / end-to-end ID:** Identifier used to correlate a payment across systems, where available.
+- **Posting:** Recording a transaction/accounting entry in a ledger or operational system; does not universally imply settlement finality.
+- **RFA (Red Flagged Account):** In RBI's 2024 commercial-bank fraud-risk directions, a loan/credit account where EWS indicate suspicion and deeper investigation is triggered; use the precise direction for applicable scope and definitions.
+- **Reconciliation:** Comparing records from systems/parties to identify matches and exceptions.
+- **Reversal:** A transaction/event that offsets or reverses an earlier event according to the relevant system/rail rules; do not simply delete the original record.
+- **Settlement:** Completion of funds/obligation settlement according to the relevant payment system and rules.
+- **Source of truth:** The authoritative system for a particular data element or event; there may be different authoritative sources for initiation, posting, and settlement.
+- **Suspicious transaction:** Activity that warrants review under a defined rule or process; this is not the same as a legally established offense.
+- **Transaction velocity:** Count/value/frequency of transactions over a specified time interval.
+- **UPI VPA:** Virtual Payment Address used in UPI; an identifier alone does not prove the identity or ownership of the person using it.
