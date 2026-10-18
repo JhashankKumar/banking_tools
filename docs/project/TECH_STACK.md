@@ -51,13 +51,13 @@ Frontend responsibilities:
 - Use the OpenAI Python SDK with `base_url="https://openrouter.ai/api/v1"`, or a small HTTPX adapter if that better fits the project. Keep provider-specific request details inside the adapter.
 - Configure `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` via environment variables. Never expose the key to the browser or commit it.
 - Hide model-specific logic behind a `ModelProvider` interface so the app can switch provider without changing domain logic.
+- Use open-weight models only (open-weight model IDs via OpenRouter); no proprietary models. Check each model artifact licence.
 - Select a model only after testing structured tool calling, argument reliability, latency, cost, context limits, and license terms. Tool-calling behavior varies by model.
 - Build a small custom, bounded agent harness with an allowlisted tool registry.
 - Consider LangGraph only if explicit multi-step state management warrants the dependency.
 - Validate every structured output with Pydantic and verify all evidence IDs against retrieved records.
 - Use synthetic data only. OpenRouter sends prompts to the selected inference provider; review OpenRouter and the selected provider's data policies. Where appropriate, use supported request controls such as `provider.data_collection="deny"` or `provider.zdr=true`, understanding that these only constrain eligible routing and do not keep data local.
 - Check exact model and tokenizer licenses, model limits, pricing, provider data retention, and tool-call reliability.
-- Ollama can remain a later optional adapter for local/offline development; it is not required for the initial implementation.
 
 ## Delivery and quality
 - Docker Compose for local repeatability.

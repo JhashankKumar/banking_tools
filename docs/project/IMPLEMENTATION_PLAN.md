@@ -33,10 +33,10 @@ Acceptance: FR-10482 path is deterministic and covered by tests.
 Acceptance: a user can open FR-10482 and inspect the two-hop path.
 
 ## Milestone 5 — AI copilot
-- Add model provider interface and Ollama adapter.
+- Add model provider interface and OpenRouter adapter (open-weight models only).
 - Add bounded tool registry and investigation endpoint.
 - Add evidence-linked response schema and citations validation.
-Acceptance: model explains the deterministic path without changing its facts; fake provider tests run without Ollama.
+Acceptance: model explains the deterministic path without changing its facts; fake provider tests run without an OpenRouter key or network access.
 
 ## Milestone 6 — Security and adversarial tests
 - Add authorization policy and demo role handling.
