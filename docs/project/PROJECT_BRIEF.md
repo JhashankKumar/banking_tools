@@ -16,7 +16,7 @@ Trace the money. Connect the evidence. Investigate with AI.
 A fraud analyst receives an alert and must assemble transaction history, related accounts, beneficiary activity, previous alerts, and supporting evidence before deciding what to review or escalate. Cross-system evidence assembly and case-narrative preparation may be labor-intensive. This is a workflow hypothesis to validate, not a claim that banks lack fraud systems.
 
 ## Product goal
-Build a reproducible, local-first demonstration that helps an investigator:
+Build a reproducible, self-hostable demonstration that helps an investigator:
 1. Review a synthetic fraud alert.
 2. Explore transactions related to an account or beneficiary.
 3. Trace money movement across multiple hops.
@@ -52,7 +52,7 @@ These are demo roles. Authorization must be enforced server-side.
 - NetworkX transaction graph and bounded path traversal.
 - FastAPI REST API.
 - Next.js/TypeScript investigator UI.
-- Local open-weight LLM integration through Ollama, behind a provider interface.
+- Open-weight LLMs called through OpenRouter, behind a provider interface, with per-user and per-IP rate limits.
 - Allowlisted AI tools and evidence-grounded answers.
 - Authentication/authorization boundary, audit logging, adversarial tests.
 - Docker Compose, CI checks, clear setup instructions, license, contribution and security docs.

@@ -1,13 +1,15 @@
 # Domain Model, API Contracts, and Money-Path Semantics
 
 ## Core entities
+Accounts and beneficiaries are separate tables. A graph node references exactly one of them via a typed reference (`account` | `beneficiary`).
+
 - Customer: synthetic identity associated with one or more accounts.
 - Account: a synthetic account identifier and status.
 - Beneficiary: a payment destination that may or may not be represented as an account.
 - Transaction: directed transfer record with amount, currency, timestamp, status, source and destination.
 - Alert: a detection event tied to a transaction, account, or rule.
 - Case: an investigation workspace around one or more alerts.
-- Evidence: a reference to a source record or deterministic finding.
+- Evidence: its own table. Each row has a stable ID (`EV-…`), the case it belongs to, a type (`transaction`, `alert`, `rule_result`, `derived_calculation`), a pointer to the source record (table + record ID), and an evidence label (`observed_fact`, `derived_fact`, `indicator`, `hypothesis`, `unknown`). AI citations use `EV-…` IDs only.
 - InvestigationRun: a single AI-assisted investigation attempt and its metadata.
 - AuditEvent: actor, action, resource, time, outcome, and request/run correlation ID.
 
@@ -18,7 +20,7 @@ At minimum:
 - `destination_entity_id`
 - `amount` as decimal
 - `currency`
-- `occurred_at` in UTC
+- `occurred_at` stored in UTC; displayed in IST (Asia/Kolkata) at the UI boundary
 - `status`
 - `reference` or trace ID
 - optional `reversal_of_transaction_id`
@@ -31,7 +33,7 @@ Do not assume that a transfer being present means it settled successfully. Model
 - A hop is one recorded transaction edge.
 - Start from a case-relevant account/transaction.
 - Apply a configured time window and maximum hop count.
-- Exclude or separately label statuses that do not represent completed transfers.
+- Include pending and reversed transactions in paths; every edge carries its status, and the path response flags whether it contains any non-final edge.
 - Return path edges with transaction IDs, amounts, currencies, timestamps, and statuses.
 - If currencies differ, do not sum amounts without a documented exchange-rate source and timestamp.
 - A path does not prove beneficial ownership, intent, or that money remained available.
