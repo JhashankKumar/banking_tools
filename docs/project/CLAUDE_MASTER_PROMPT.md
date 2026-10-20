@@ -17,6 +17,7 @@ Act as a pragmatic staff-level full-stack engineer and security-minded reviewer.
 - `TECH_STACK.md`
 - `ENGINEERING_PRINCIPLES.md`
 - `ARCHITECTURE_AND_FOLDERS.md`
+- `API_AND_CODE_CONVENTIONS.md` (binding for every endpoint, feature module, and page)
 - `DOMAIN_MODEL_AND_APIS.md`
 - `AI_AGENT_AND_SECURITY.md`
 - `TESTING_AND_EVALUATION.md`
