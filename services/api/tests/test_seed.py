@@ -48,11 +48,11 @@ def test_seed_creates_fr_10482_records(db_session: Session) -> None:
         .order_by(case_transactions.c.transaction_id)
     ).all()
     assert linked == ["TX-1001", "TX-1002"]
-    assert db_session.get_one(Alert, "AL-10482").rule_id == "RAPID_ONWARD_TRANSFER"
+    assert db_session.get_one(Alert, "AL-ROT-TX-1002").rule_id == "RAPID_ONWARD_TRANSFER"
     evidence_ids = db_session.scalars(
         select(Evidence.id).where(Evidence.case_id == "FR-10482").order_by(Evidence.id)
     ).all()
-    assert evidence_ids == ["EV-10482-AL-10482", "EV-10482-TX-1001", "EV-10482-TX-1002"]
+    assert evidence_ids == ["EV-10482-AL-ROT-TX-1002", "EV-10482-TX-1001", "EV-10482-TX-1002"]
 
 
 def test_seed_creates_prompt_injection_case(db_session: Session) -> None:
@@ -81,7 +81,11 @@ def test_seed_is_idempotent(db_session: Session) -> None:
     second = seed(db_session, demo_password="a-different-password")
     hashes_after = dict(db_session.execute(select(User.username, User.password_hash)).all())
 
-    assert first == second
+    # The audit log is append-only: each run records one detection.run event.
+    assert {k: v for k, v in first.items() if k != "audit_events"} == {
+        k: v for k, v in second.items() if k != "audit_events"
+    }
+    assert second["audit_events"] == first["audit_events"] + 1
     assert hashes_before == hashes_after
 
 
