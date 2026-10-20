@@ -4,7 +4,7 @@
 
 An open-source AI copilot for fraud investigation, transaction graph analysis, and evidence-grounded financial-crime workflows.
 
-> **Status: Milestone 2 — synthetic data, login, case API, and deterministic detection rules.** No UI or AI features yet. See the [implementation plan](docs/project/IMPLEMENTATION_PLAN.md).
+> **Status: Milestone 3 — synthetic data, login, case API, detection rules, money paths, and case graph data.** No UI or AI features yet. See the [implementation plan](docs/project/IMPLEMENTATION_PLAN.md).
 >
 > **Synthetic data only.** This is a demonstration project. Never load real customer or bank data. It is not production-ready and makes no compliance or fraud-accuracy claims.
 
