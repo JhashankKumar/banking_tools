@@ -41,7 +41,9 @@ Do not assume that a transfer being present means it settled successfully. Model
 - Use deterministic traversal; the LLM may explain results but may not fabricate or alter them.
 
 ## Initial API endpoints
-- `GET /api/v1/health`
+- `GET /api/v1/health` (liveness) and `GET /api/v1/health/ready` (database reachable)
+- `POST /api/v1/auth/token` (OAuth2 password form → bearer token), `GET /api/v1/auth/me`
+- `GET /api/v1/users`, `POST /api/v1/users`, `PATCH /api/v1/users/{user_id}` (Supervisor only)
 - `GET /api/v1/dashboard/summary`
 - `GET /api/v1/alerts`
 - `GET /api/v1/alerts/{alert_id}`

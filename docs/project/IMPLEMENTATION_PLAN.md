@@ -13,7 +13,8 @@ Acceptance: a contributor can follow setup instructions and run the smallest che
 - Define schema and migrations.
 - Generate deterministic synthetic accounts, transactions, alerts, and case FR-10482.
 - Implement health, case detail, and transaction endpoints.
-Acceptance: seeded data can be retrieved via API; no real customer data.
+- Add database-backed users, login, role-based permission checks, Supervisor user management, and audit events (moved from Milestone 6; see ADR 0001 #15).
+Acceptance: seeded data can be retrieved via API by an authorized role; unauthenticated and unauthorized requests are denied; no real customer data.
 
 ## Milestone 2 — Deterministic detection
 - Define a documented rule contract.
@@ -39,7 +40,6 @@ Acceptance: a user can open FR-10482 and inspect the two-hop path.
 Acceptance: model explains the deterministic path without changing its facts; fake provider tests run without an OpenRouter key or network access.
 
 ## Milestone 6 — Security and adversarial tests
-- Add authorization policy and demo role handling.
 - Test prompt injection, unauthorized access, invalid tools, output grounding, audit logging.
 Acceptance: all defined negative tests pass; limitations documented.
 

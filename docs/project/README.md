@@ -6,6 +6,7 @@ This folder captures the project decisions and development rules agreed so far. 
 
 - `PROJECT_BRIEF.md` — problem, scope, product goals, and non-goals.
 - `TECH_STACK.md` — recommended technologies and rationale, including OpenRouter as the initial LLM gateway.
+- `API_AND_CODE_CONVENTIONS.md` — response/error envelope, error codes, field formats, backend layers and data objects, frontend API client, Zod boundary, query keys, forms.
 - `ENGINEERING_PRINCIPLES.md` — KISS, DRY, YAGNI, SOLID, cohesion, coupling, code flow, and practical rules.
 - `ARCHITECTURE_AND_FOLDERS.md` — proposed modular monolith and repository layout.
 - `DOMAIN_MODEL_AND_APIS.md` — core entities, endpoints, and transaction path semantics.

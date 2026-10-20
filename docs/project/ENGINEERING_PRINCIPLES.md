@@ -74,6 +74,7 @@ Routes/controllers should be thin. They coordinate, but do not contain business 
 - Avoid boolean arguments whose meaning is unclear; use named options or distinct functions when appropriate.
 
 ## 8. Type and data contracts
+The concrete wire contract (envelope, error codes, field formats, naming) is in `API_AND_CODE_CONVENTIONS.md`.
 - TypeScript strict mode; avoid `any` unless justified and isolated.
 - Python type hints for public functions and domain data.
 - Pydantic schemas at API boundaries.
