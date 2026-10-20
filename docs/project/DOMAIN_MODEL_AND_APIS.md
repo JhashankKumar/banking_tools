@@ -45,8 +45,8 @@ Do not assume that a transfer being present means it settled successfully. Model
 - `POST /api/v1/auth/token` (OAuth2 password form → bearer token), `GET /api/v1/auth/me`
 - `GET /api/v1/users`, `POST /api/v1/users`, `PATCH /api/v1/users/{user_id}` (Supervisor only)
 - `GET /api/v1/dashboard/summary`
-- `GET /api/v1/alerts`
-- `GET /api/v1/alerts/{alert_id}`
+- `GET /api/v1/alerts?case_id=&rule_id=` and `GET /api/v1/alerts/{alert_id}` (alert IDs: `AL-<rule code>-<trigger transaction>`)
+- `GET /api/v1/rules` (detection rule catalog)
 - `GET /api/v1/cases/{case_id}`
 - `GET /api/v1/cases/{case_id}/transactions`
 - `GET /api/v1/cases/{case_id}/money-paths?max_hops=3&window_hours=24`

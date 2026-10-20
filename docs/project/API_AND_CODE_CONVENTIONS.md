@@ -75,6 +75,7 @@ Codes are stable once released. Add new codes here in the same change that intro
 | `NOT_FOUND`                | 404  | No such route.                                                                                |
 | `METHOD_NOT_ALLOWED`       | 405  | Route exists, method does not.                                                                |
 | `CASE_NOT_FOUND`           | 404  |                                                                                               |
+| `ALERT_NOT_FOUND`          | 404  |                                                                                               |
 | `USER_NOT_FOUND`           | 404  |                                                                                               |
 | `USER_USERNAME_TAKEN`      | 409  |                                                                                               |
 | `USER_SELF_LOCKOUT`        | 409  | A Supervisor tried to deactivate or demote their own account.                                 |
