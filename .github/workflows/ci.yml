@@ -20,8 +20,28 @@ jobs:
     defaults:
       run:
         working-directory: services/api
+    services:
+      postgres:
+        image: postgres:16.15-alpine
+        # Throwaway credentials for an ephemeral CI-only database. Not secrets.
+        env:
+          POSTGRES_USER: ofi_ci
+          POSTGRES_PASSWORD: ofi_ci_only
+          POSTGRES_DB: openfraud_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ofi_ci -d openfraud_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     env:
       OFI_APP_ENV: ci
+      OFI_DATABASE_URL: postgresql+psycopg://ofi_ci:ofi_ci_only@localhost:5432/openfraud_test
+      OFI_TEST_DATABASE_URL: postgresql+psycopg://ofi_ci:ofi_ci_only@localhost:5432/openfraud_test
+      OFI_JWT_SECRET: ci-only-jwt-secret-not-for-real-use-0123456789
+      OFI_DEMO_PASSWORD: ci-only-demo-password
+      UV_LOCKED: "1"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -33,6 +53,10 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pyright
+      - name: Migrations apply cleanly and match the models
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
       - run: uv run pytest
 
   frontend:
