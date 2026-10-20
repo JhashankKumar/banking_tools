@@ -49,7 +49,7 @@ These are demo roles. Authorization must be enforced server-side.
 - Synthetic data generator and documented scenarios.
 - PostgreSQL-backed accounts, transactions, alerts, cases, evidence, investigation runs, and audit logs.
 - Deterministic rule engine with explanations.
-- NetworkX transaction graph and bounded path traversal.
+- Case transaction graph (one case's neighbourhood within a time window) and bounded, time-respecting path traversal.
 - FastAPI REST API.
 - Next.js/TypeScript investigator UI.
 - Open-weight LLMs called through OpenRouter, behind a provider interface, with per-user and per-IP rate limits.
