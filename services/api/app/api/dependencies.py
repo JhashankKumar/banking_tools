@@ -1,5 +1,6 @@
 """Request-scoped dependencies: database session, current user, and permission checks."""
 
+import logging
 from collections.abc import Callable
 from typing import Annotated
 
@@ -21,6 +22,7 @@ from app.modules.users.models import User
 DbSession = Annotated[Session, Depends(get_session, scope="function")]
 
 _bearer = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/token", auto_error=False)
+logger = logging.getLogger(__name__)
 
 
 def request_id_of(request: Request) -> str | None:
@@ -33,7 +35,9 @@ def get_current_user(session: DbSession, token: Annotated[str | None, Depends(_b
         raise NotAuthenticatedError
     try:
         user_id = decode_access_token(token)
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as error:
+        # Reason only (e.g. ExpiredSignatureError); never log the token itself.
+        logger.info("Rejected access token: %s", type(error).__name__)
         raise NotAuthenticatedError from None
     user = session.get(User, user_id)
     if user is None or not user.is_active:
