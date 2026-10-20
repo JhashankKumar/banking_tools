@@ -9,7 +9,7 @@ from sqlalchemy import Engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.modules.cases.models import Case, CaseStatus
+from app.modules.cases.models import Alert, Case, CaseStatus, PartyType
 from app.modules.evidence.models import Evidence, EvidenceLabel, EvidenceType
 from app.modules.parties.models import Account, AccountStatus, Beneficiary, IdentifierType
 from app.modules.transactions.models import Transaction, TransactionStatus
@@ -135,3 +135,45 @@ def test_migration_downgrade_then_upgrade(engine: Engine) -> None:
 
     command.downgrade(config, "base")
     command.upgrade(config, "head")
+
+
+def make_alert(alert_id: str) -> Alert:
+    return Alert(
+        id=alert_id,
+        rule_id="RAPID_ONWARD_TRANSFER",
+        rule_version="1",
+        rule_code="ROT",
+        entity_type=PartyType.BENEFICIARY,
+        entity_id="BEN-T1",
+        trigger_transaction_id="TX-T1",
+        transaction_ids=["TX-T0", "TX-T1"],
+        triggered_at=datetime(2026, 9, 15, 4, 37, 42, tzinfo=UTC),
+        explanation="Signal for analyst review; not a finding of fraud.",
+        metrics={"elapsed_seconds": "328"},
+        scenario_id=SCENARIO,
+    )
+
+
+@pytest.mark.usefixtures("parties")
+def test_alert_unique_per_rule_and_trigger(db_session: Session) -> None:
+    db_session.add(make_transaction())
+    db_session.flush()
+    db_session.add(make_alert("AL-ROT-TX-T1"))
+    db_session.flush()
+
+    assert_rejected(db_session, make_alert("AL-ROT-TX-T1-DUPLICATE"))
+
+
+@pytest.mark.usefixtures("parties")
+def test_alert_transaction_ids_and_metrics_round_trip(db_session: Session) -> None:
+    db_session.add(make_transaction())
+    db_session.flush()
+    db_session.add(make_alert("AL-ROT-TX-T1"))
+    db_session.flush()
+    db_session.expire_all()
+
+    stored = db_session.get_one(Alert, "AL-ROT-TX-T1")
+
+    assert stored.transaction_ids == ["TX-T0", "TX-T1"]
+    assert stored.metrics == {"elapsed_seconds": "328"}
+    assert stored.entity_type == PartyType.BENEFICIARY

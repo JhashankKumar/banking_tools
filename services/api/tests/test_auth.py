@@ -139,3 +139,22 @@ def test_password_hash_is_argon2_and_not_plaintext(db_session: Session) -> None:
 
     assert stored.startswith("$argon2id$")
     assert DEFAULT_PASSWORD not in stored
+
+
+def test_token_tolerates_small_clock_skew(client: TestClient, db_session: Session) -> None:
+    """A token issued a few seconds 'in the future' (clock stepped back, e.g. WSL2/NTP) is valid."""
+    user = make_user(db_session, username="analyst.one", role=Role.ANALYST)
+    token = create_access_token(user.id, now=datetime.now(UTC) + timedelta(seconds=5))
+
+    response = client.get(ME_URL, headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 200
+
+
+def test_token_from_far_future_rejected(client: TestClient, db_session: Session) -> None:
+    user = make_user(db_session, username="analyst.one", role=Role.ANALYST)
+    token = create_access_token(user.id, now=datetime.now(UTC) + timedelta(minutes=5))
+
+    response = client.get(ME_URL, headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
