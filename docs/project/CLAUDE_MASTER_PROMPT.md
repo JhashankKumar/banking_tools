@@ -31,7 +31,7 @@ If these files are not present in the repository context, ask me to provide them
 - Frontend: Next.js, React, strict TypeScript, Tailwind CSS, React Flow (`@xyflow/react`), TanStack Query, Zod, Vitest, React Testing Library.
 - Backend: Python, FastAPI, Pydantic, SQLAlchemy 2.x, Alembic, pytest, HTTPX.
 - Data: PostgreSQL; decimal-safe money; UTC timestamps.
-- Graph: NetworkX for MVP, bounded deterministic graph traversal.
+- Graph: hand-written bounded, time-respecting deterministic traversal (ADR 0001 #17); UI graph with React Flow + ELK (#18).
 - Detection: transparent Python rules first; scikit-learn baseline only after dataset/labels are defined.
 - AI: OpenRouter as the initial hosted model gateway through its OpenAI-compatible API; use a verified tool-calling-capable open-weight model only (no proprietary models), configurable with `OPENROUTER_MODEL`. Keep it behind a `ModelProvider` interface and implement a custom bounded tool harness with Pydantic schemas. Use LangGraph only if justified.
 - Delivery: Docker Compose and GitHub Actions.

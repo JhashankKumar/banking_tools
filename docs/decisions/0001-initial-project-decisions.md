@@ -23,6 +23,8 @@ These decisions resolve open questions and inconsistencies in `docs/project/` an
 14. **MCP:** not in scope. May be revisited after the Hacktoberfest presentation.
 15. **Auth moved to Milestone 1** (decided 2026-10-20): login and role-based permission checks ship with the first data endpoints, so no endpoint is ever unprotected. Milestone 6 keeps the adversarial/security test suite.
 16. **API and code conventions** (decided 2026-10-20): `{ "data" }` / `{ "data", "page" }` success envelope, `{ "error": { code, message, details, request_id } }` errors with a code registry, snake_case wire with camelCase UI models converted at a Zod boundary, money as two-decimal strings, UTC `Z` timestamps. Full rules: `docs/project/API_AND_CODE_CONVENTIONS.md`.
+17. **Graph traversal** (decided 2026-10-20): money paths use a small hand-written, time-respecting, bounded depth-first search. NetworkX is not used: it does not support time-ordered paths and adds an untyped dependency. Revisit only with measured need (rustworkx, or a graph database).
+18. **MVP graph view** (decided 2026-10-20): one case's neighbourhood within the time window (case parties plus every transaction touching them), rendered in the UI with React Flow + ELK layered layout. No whole-network view in the MVP.
 
 ## Timeline
 

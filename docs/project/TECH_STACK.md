@@ -5,7 +5,7 @@ Choose stable, mutually compatible versions at implementation time. Pin dependen
 ## Frontend
 - Next.js + React + TypeScript: application, routes, reusable UI.
 - Tailwind CSS: styling.
-- `@xyflow/react` (React Flow): interactive transaction graph.
+- `@xyflow/react` (React Flow) + `elkjs` (layered left-to-right layout): interactive transaction graph (ADR 0001 #18).
 - TanStack Query: server-state fetching, caching, retries, invalidation.
 - React Hook Form + Zod: forms and client-side validation.
 - Vitest + React Testing Library: component and frontend tests.
@@ -35,7 +35,7 @@ Frontend responsibilities:
 - Synthetic dataset only.
 
 ## Graph analysis
-- NetworkX: directed graph analysis for the MVP.
+- Hand-written, time-respecting bounded traversal for the MVP (ADR 0001 #17); NetworkX not used.
 - Use bounded traversal, time windows, maximum hop counts, and result limits.
 - Keep transaction identifiers and evidence metadata on each edge.
 - Benchmark before introducing Neo4j or another graph database.
