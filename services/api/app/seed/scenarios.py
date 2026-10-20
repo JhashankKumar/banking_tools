@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from app.db.base import Base
-from app.modules.cases.models import Alert, Case, CaseStatus
+from app.modules.cases.models import Case, CaseStatus
 from app.modules.evidence.models import Evidence, EvidenceLabel, EvidenceType
 from app.modules.parties.models import (
     Account,
@@ -111,17 +111,6 @@ def fr_10482() -> Scenario:
                 opened_at=_utc(2026, 9, 15, 5, 0, 0),
                 scenario_id=s,
             ),
-            Alert(
-                id="AL-10482",
-                case_id="FR-10482",
-                rule_id="RAPID_ONWARD_TRANSFER",
-                rule_version="1",
-                transaction_id="TX-1002",
-                triggered_at=_utc(2026, 9, 15, 4, 38, 0),
-                summary="BEN-B sent a completed transfer 5 minutes 28 seconds after receiving "
-                "one. Requires analyst review.",
-                scenario_id=s,
-            ),
             _evidence(
                 "FR-10482",
                 EvidenceType.TRANSACTION,
@@ -138,11 +127,164 @@ def fr_10482() -> Scenario:
                 EvidenceLabel.OBSERVED_FACT,
                 s,
             ),
-            _evidence(
-                "FR-10482", EvidenceType.ALERT, "alerts", "AL-10482", EvidenceLabel.INDICATOR, s
-            ),
         ],
         case_links=[("FR-10482", "TX-1001"), ("FR-10482", "TX-1002")],
+    )
+
+
+def fr_10483() -> Scenario:
+    """Benign high-value transfer: a large scheduled supplier payment with invoice context."""
+    s = "fr-10483"
+    return Scenario(
+        id=s,
+        records=[
+            Customer(id="CUS-301", display_name="Synthetic Supplier Buyer Ltd", scenario_id=s),
+            Account(
+                id="ACC-301",
+                customer_id="CUS-301",
+                status=AccountStatus.ACTIVE,
+                currency="INR",
+                scenario_id=s,
+            ),
+            Beneficiary(
+                id="BEN-301",
+                display_label="Synthetic Supplier 301",
+                identifier_type=IdentifierType.ACCOUNT,
+                scenario_id=s,
+            ),
+            Transaction(
+                id="TX-3001",
+                source_account_id="ACC-301",
+                destination_beneficiary_id="BEN-301",
+                amount=Decimal("950000.00"),
+                currency="INR",
+                occurred_at=_utc(2026, 9, 17, 5, 30, 0),
+                status=TransactionStatus.SETTLED,
+                source_status="SUCCESS",
+                rail="RTGS",
+                reference="SYN-INV-3001",
+                description="Scheduled supplier payment, invoice SYN-INV-3001",
+                scenario_id=s,
+            ),
+            Case(
+                id="FR-10483",
+                title="High-value scheduled supplier payment",
+                status=CaseStatus.OPEN,
+                opened_at=_utc(2026, 9, 17, 6, 0, 0),
+                scenario_id=s,
+            ),
+            _evidence(
+                "FR-10483",
+                EvidenceType.TRANSACTION,
+                "transactions",
+                "TX-3001",
+                EvidenceLabel.OBSERVED_FACT,
+                s,
+            ),
+        ],
+        case_links=[("FR-10483", "TX-3001")],
+    )
+
+
+def fr_10485() -> Scenario:
+    """Transfer later reversed: the onward transfer must not count as rapid pass-through."""
+    s = "fr-10485"
+    return Scenario(
+        id=s,
+        records=[
+            Account(
+                id="ACC-501",
+                customer_id=None,
+                status=AccountStatus.ACTIVE,
+                currency="INR",
+                scenario_id=s,
+            ),
+            Beneficiary(
+                id="BEN-501",
+                display_label="Synthetic Beneficiary 501",
+                identifier_type=IdentifierType.VPA,
+                scenario_id=s,
+            ),
+            Account(
+                id="ACC-502",
+                customer_id=None,
+                status=AccountStatus.ACTIVE,
+                currency="INR",
+                scenario_id=s,
+            ),
+            Transaction(
+                id="TX-5001",
+                source_account_id="ACC-501",
+                destination_beneficiary_id="BEN-501",
+                amount=Decimal("20000.00"),
+                currency="INR",
+                occurred_at=_utc(2026, 9, 18, 4, 0, 0),
+                status=TransactionStatus.SETTLED,
+                source_status="SUCCESS",
+                rail="UPI",
+                reference="SYN-REF-5001",
+                scenario_id=s,
+            ),
+            Transaction(
+                id="TX-5003",
+                source_beneficiary_id="BEN-501",
+                destination_account_id="ACC-502",
+                amount=Decimal("19000.00"),
+                currency="INR",
+                occurred_at=_utc(2026, 9, 18, 4, 10, 0),
+                status=TransactionStatus.SETTLED,
+                source_status="SUCCESS",
+                rail="UPI",
+                reference="SYN-REF-5003",
+                scenario_id=s,
+            ),
+            Transaction(
+                id="TX-5002",
+                source_beneficiary_id="BEN-501",
+                destination_account_id="ACC-501",
+                amount=Decimal("20000.00"),
+                currency="INR",
+                occurred_at=_utc(2026, 9, 18, 4, 20, 0),
+                status=TransactionStatus.REVERSED,
+                source_status="REVERSAL",
+                rail="UPI",
+                reference="SYN-REF-5002",
+                reversal_of_transaction_id="TX-5001",
+                scenario_id=s,
+            ),
+            Case(
+                id="FR-10485",
+                title="Transfer followed by a reversal",
+                status=CaseStatus.OPEN,
+                opened_at=_utc(2026, 9, 18, 5, 0, 0),
+                scenario_id=s,
+            ),
+            _evidence(
+                "FR-10485",
+                EvidenceType.TRANSACTION,
+                "transactions",
+                "TX-5001",
+                EvidenceLabel.OBSERVED_FACT,
+                s,
+            ),
+            _evidence(
+                "FR-10485",
+                EvidenceType.TRANSACTION,
+                "transactions",
+                "TX-5002",
+                EvidenceLabel.OBSERVED_FACT,
+                s,
+            ),
+            _evidence(
+                "FR-10485",
+                EvidenceType.TRANSACTION,
+                "transactions",
+                "TX-5003",
+                EvidenceLabel.OBSERVED_FACT,
+                s,
+            ),
+        ],
+        case_links=[("FR-10485", "TX-5001"), ("FR-10485", "TX-5002"), ("FR-10485", "TX-5003")],
     )
 
 
@@ -200,4 +342,4 @@ def fr_10486() -> Scenario:
 
 
 def all_scenarios() -> list[Scenario]:
-    return [fr_10482(), fr_10486()]
+    return [fr_10482(), fr_10483(), fr_10485(), fr_10486()]
