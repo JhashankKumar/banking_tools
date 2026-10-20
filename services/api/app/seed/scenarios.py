@@ -186,6 +186,85 @@ def fr_10483() -> Scenario:
     )
 
 
+def fr_10484() -> Scenario:
+    """Circular path back to the originating account, hops hours apart (no rapid-transfer alert)."""
+    s = "fr-10484"
+    hops = [
+        ("TX-4001", "ACC-401", "BEN-402", "30000.00", _utc(2026, 9, 19, 4, 0, 0)),
+        ("TX-4002", "BEN-402", "ACC-403", "29000.00", _utc(2026, 9, 19, 6, 0, 0)),
+        ("TX-4003", "ACC-403", "ACC-401", "28000.00", _utc(2026, 9, 19, 9, 0, 0)),
+    ]
+    transactions: list[Base] = []
+    for tx_id, source, destination, amount, at in hops:
+        sides = {
+            ("source_beneficiary_id" if source.startswith("BEN-") else "source_account_id"): source,
+            (
+                "destination_beneficiary_id"
+                if destination.startswith("BEN-")
+                else "destination_account_id"
+            ): destination,
+        }
+        transactions.append(
+            Transaction(
+                id=tx_id,
+                **sides,
+                amount=Decimal(amount),
+                currency="INR",
+                occurred_at=at,
+                status=TransactionStatus.SETTLED,
+                source_status="SUCCESS",
+                rail="IMPS",
+                reference=f"SYN-REF-{tx_id.removeprefix('TX-')}",
+                scenario_id=s,
+            )
+        )
+    return Scenario(
+        id=s,
+        records=[
+            Account(
+                id="ACC-401",
+                customer_id=None,
+                status=AccountStatus.ACTIVE,
+                currency="INR",
+                scenario_id=s,
+            ),
+            Beneficiary(
+                id="BEN-402",
+                display_label="Synthetic Beneficiary 402",
+                identifier_type=IdentifierType.ACCOUNT,
+                scenario_id=s,
+            ),
+            Account(
+                id="ACC-403",
+                customer_id=None,
+                status=AccountStatus.ACTIVE,
+                currency="INR",
+                scenario_id=s,
+            ),
+            *transactions,
+            Case(
+                id="FR-10484",
+                title="Funds return to the originating account",
+                status=CaseStatus.OPEN,
+                opened_at=_utc(2026, 9, 19, 10, 0, 0),
+                scenario_id=s,
+            ),
+            *(
+                _evidence(
+                    "FR-10484",
+                    EvidenceType.TRANSACTION,
+                    "transactions",
+                    tx_id,
+                    EvidenceLabel.OBSERVED_FACT,
+                    s,
+                )
+                for tx_id, *_ in hops
+            ),
+        ],
+        case_links=[("FR-10484", tx_id) for tx_id, *_ in hops],
+    )
+
+
 def fr_10485() -> Scenario:
     """Transfer later reversed: the onward transfer must not count as rapid pass-through."""
     s = "fr-10485"
@@ -342,4 +421,4 @@ def fr_10486() -> Scenario:
 
 
 def all_scenarios() -> list[Scenario]:
-    return [fr_10482(), fr_10483(), fr_10485(), fr_10486()]
+    return [fr_10482(), fr_10483(), fr_10484(), fr_10485(), fr_10486()]

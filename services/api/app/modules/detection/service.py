@@ -1,9 +1,10 @@
 """Run registered rules over the stored transactions and record their hits as alerts."""
 
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
+from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -28,7 +29,43 @@ def _party(account_id: str | None, beneficiary_id: str | None) -> PartyKey:
     return ("beneficiary", beneficiary_id)
 
 
-def load_facts(session: Session) -> list[TransactionFact]:
+def load_facts(
+    session: Session,
+    *,
+    since: datetime | None = None,
+    until: datetime | None = None,
+    involving: Collection[PartyKey] | None = None,
+    transaction_ids: Collection[str] | None = None,
+    limit: int | None = None,
+) -> list[TransactionFact]:
+    """Transactions as facts in (occurred_at, id) order, optionally filtered.
+
+    `since`/`until` bound occurred_at (inclusive); `involving` keeps transactions with any of the
+    parties as source or destination; `transaction_ids` keeps only those IDs. Reversal links are
+    always resolved against the whole table, so a fact still knows it was reversed by a record
+    outside the filter.
+    """
+    query = select(Transaction)
+    if since is not None:
+        query = query.where(Transaction.occurred_at >= since)
+    if until is not None:
+        query = query.where(Transaction.occurred_at <= until)
+    if transaction_ids is not None:
+        query = query.where(Transaction.id.in_(list(transaction_ids)))
+    if involving is not None:
+        accounts = [party_id for kind, party_id in involving if kind == "account"]
+        beneficiaries = [party_id for kind, party_id in involving if kind == "beneficiary"]
+        query = query.where(
+            or_(
+                Transaction.source_account_id.in_(accounts),
+                Transaction.destination_account_id.in_(accounts),
+                Transaction.source_beneficiary_id.in_(beneficiaries),
+                Transaction.destination_beneficiary_id.in_(beneficiaries),
+            )
+        )
+    query = query.order_by(Transaction.occurred_at, Transaction.id)
+    if limit is not None:
+        query = query.limit(limit)
     reversals: defaultdict[str, list[str]] = defaultdict(list)
     for reversal_id, original_id in session.execute(
         select(Transaction.id, Transaction.reversal_of_transaction_id)
@@ -49,7 +86,7 @@ def load_facts(session: Session) -> list[TransactionFact]:
             reversed_by=tuple(reversals.get(tx.id, ())),
             reverses=tx.reversal_of_transaction_id,
         )
-        for tx in session.scalars(select(Transaction).order_by(Transaction.id))
+        for tx in session.scalars(query)
     ]
 
 
