@@ -4,8 +4,14 @@ version = "0.1.0"
 description = "OpenFraud Investigator backend API (FastAPI)."
 requires-python = ">=3.12"
 dependencies = [
+    "alembic==1.20.0",
     "fastapi==0.144.0",
+    "psycopg[binary]==3.3.6",
+    "pwdlib[argon2]==0.3.1",
     "pydantic-settings==2.16.0",
+    "pyjwt==2.15.1",
+    "python-multipart==0.0.32",
+    "sqlalchemy==2.1.5",
     "uvicorn[standard]==0.54.0",
 ]
 
@@ -28,7 +34,8 @@ line-length = 100
 select = ["E", "F", "I", "B", "UP", "S", "N"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101"]
+# Tests use throwaway literal credentials for synthetic users.
+"tests/**" = ["S101", "S105", "S106"]
 
 [tool.pyright]
 pythonVersion = "3.12"
