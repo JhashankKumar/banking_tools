@@ -21,10 +21,12 @@ Material architecture changes need a short ADR in [`docs/decisions/`](docs/decis
 
 ## Local checks
 
+Backend tests need the local database (`docker compose up -d db`, see README). Schema changes need an Alembic migration (`uv run alembic revision --autogenerate -m "..."`), reviewed by hand.
+
 Backend (`services/api`):
 
 ```bash
-uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest
+uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run alembic check && uv run pytest
 ```
 
 Frontend (`apps/web`):

@@ -4,18 +4,19 @@
 
 An open-source AI copilot for fraud investigation, transaction graph analysis, and evidence-grounded financial-crime workflows.
 
-> **Status: Milestone 0 — project skeleton only.** There are no investigation features yet. See the [implementation plan](docs/project/IMPLEMENTATION_PLAN.md).
+> **Status: Milestone 1 — synthetic data, login, and case API.** No UI or AI features yet. See the [implementation plan](docs/project/IMPLEMENTATION_PLAN.md).
 >
 > **Synthetic data only.** This is a demonstration project. Never load real customer or bank data. It is not production-ready and makes no compliance or fraud-accuracy claims.
 
 ## Prerequisites
 
-| Tool                             | Version |
-| -------------------------------- | ------- |
-| Python                           | 3.12    |
-| [uv](https://docs.astral.sh/uv/) | 0.13.1  |
-| Node.js                          | 24      |
-| [pnpm](https://pnpm.io/)         | 11      |
+| Tool                             | Version    |
+| -------------------------------- | ---------- |
+| Python                           | 3.12       |
+| [uv](https://docs.astral.sh/uv/) | 0.13.1     |
+| Node.js                          | 24         |
+| [pnpm](https://pnpm.io/)         | 11         |
+| Docker + Compose v2              | any recent |
 
 Install uv if you don't have it, then make sure `~/.local/bin` is on your `PATH` (open a new shell or run `source ~/.local/bin/env`):
 
@@ -28,16 +29,50 @@ Node 24 is required (`apps/web/package.json` declares `engines.node >=24`). If y
 
 ## Run locally
 
-Backend API (`services/api`):
+### 1. Configure
+
+```bash
+cp .env.example .env
+```
+
+Fill in every `<PLACEHOLDER>` in `.env` with your own local values:
+
+- `OFI_DB_USER` / `OFI_DB_PASSWORD`: any throwaway local credentials; use the same values inside `OFI_DATABASE_URL` and `OFI_TEST_DATABASE_URL`.
+- `OFI_JWT_SECRET`: generate with `openssl rand -hex 32`.
+- `OFI_DEMO_PASSWORD`: at least 12 characters; the seeded demo users log in with it.
+
+`.env` is git-ignored. Never commit it.
+
+### 2. Start the database
+
+Requires Docker with the Compose v2 plugin (`docker compose version`). On Ubuntu: `sudo apt install docker-compose-v2`.
+
+```bash
+docker compose up -d db        # PostgreSQL 16 on localhost:5433 (also creates openfraud_test)
+```
+
+### 3. Backend API (`services/api`)
 
 ```bash
 cd services/api
 uv sync
+uv run alembic upgrade head    # create tables
+uv run python -m app.seed      # load synthetic case FR-10482 and demo users
 uv run uvicorn app.main:app --reload
 # http://localhost:8000/api/v1/health → {"status":"ok"}
 ```
 
-Frontend (`apps/web`):
+With `OFI_DOCS_ENABLED=true`, open http://localhost:8000/docs, click **Authorize**, sign in as `analyst.demo` with your `OFI_DEMO_PASSWORD`, and call `GET /api/v1/cases/FR-10482/transactions`.
+
+Demo users (synthetic; roles are role-based access only):
+
+| Username          | Role       | Can                                                 |
+| ----------------- | ---------- | --------------------------------------------------- |
+| `analyst.demo`    | Analyst    | read cases, transactions, alerts, evidence          |
+| `supervisor.demo` | Supervisor | analyst access + case status changes + manage users |
+| `auditor.demo`    | Auditor    | read the audit log only                             |
+
+### 4. Frontend (`apps/web`)
 
 ```bash
 cd apps/web
@@ -45,8 +80,6 @@ pnpm install
 pnpm dev
 # http://localhost:3000
 ```
-
-Configuration: copy `.env.example` to `services/api/.env` if you need local overrides. Never commit `.env` files.
 
 ## Checks
 
@@ -59,7 +92,8 @@ cd services/api
 uv run ruff check .
 uv run ruff format --check .
 uv run pyright
-uv run pytest
+uv run alembic check           # models and migrations agree
+uv run pytest                  # needs the database from step 2
 ```
 
 Frontend:
