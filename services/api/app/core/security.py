@@ -9,6 +9,8 @@ from pwdlib import PasswordHash
 from app.core.config import get_settings
 
 _ALGORITHM = "HS256"
+# Tolerate small clock steps between issuing and checking a token (e.g. NTP/WSL2 resync).
+_CLOCK_SKEW = timedelta(seconds=10)
 _password_hash = PasswordHash.recommended()  # Argon2id
 # Verified against when the username is unknown, so response time doesn't reveal which users exist.
 _DUMMY_HASH = _password_hash.hash("dummy-password-for-timing-only")
@@ -44,6 +46,7 @@ def decode_access_token(token: str) -> uuid.UUID:
         token,
         get_settings().jwt_secret.get_secret_value(),
         algorithms=[_ALGORITHM],
+        leeway=_CLOCK_SKEW,
         options={"require": ["sub", "iat", "exp"]},
     )
     try:

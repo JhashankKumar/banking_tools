@@ -4,7 +4,7 @@
 
 An open-source AI copilot for fraud investigation, transaction graph analysis, and evidence-grounded financial-crime workflows.
 
-> **Status: Milestone 1 — synthetic data, login, and case API.** No UI or AI features yet. See the [implementation plan](docs/project/IMPLEMENTATION_PLAN.md).
+> **Status: Milestone 3 — synthetic data, login, case API, detection rules, money paths, and case graph data.** No UI or AI features yet. See the [implementation plan](docs/project/IMPLEMENTATION_PLAN.md).
 >
 > **Synthetic data only.** This is a demonstration project. Never load real customer or bank data. It is not production-ready and makes no compliance or fraud-accuracy claims.
 
@@ -57,7 +57,8 @@ docker compose up -d db        # PostgreSQL 16 on localhost:5433 (also creates o
 cd services/api
 uv sync
 uv run alembic upgrade head    # create tables
-uv run python -m app.seed      # load synthetic case FR-10482 and demo users
+uv run python -m app.seed      # load synthetic cases and demo users, then run detection
+uv run python -m app.modules.detection   # re-run detection rules any time (idempotent)
 uv run uvicorn app.main:app --reload
 # http://localhost:8000/api/v1/health → {"status":"ok"}
 ```
@@ -122,6 +123,7 @@ docs/decisions/    Architecture decision records
 
 - [Project knowledge base](docs/project/README.md)
 - [Banking domain knowledge base](docs/banking-domain/README.md)
+- [Detection rules](docs/project/DETECTION_RULES.md) · [API and code conventions](docs/project/API_AND_CODE_CONVENTIONS.md)
 - [Decisions](docs/decisions/)
 - [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Code of conduct](CODE_OF_CONDUCT.md)
 

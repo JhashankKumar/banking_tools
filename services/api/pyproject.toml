@@ -35,7 +35,7 @@ select = ["E", "F", "I", "B", "UP", "S", "N"]
 
 [tool.ruff.lint.per-file-ignores]
 # Tests use throwaway literal credentials for synthetic users.
-"tests/**" = ["S101", "S105", "S106"]
+"tests/**" = ["S101", "S105", "S106", "S311"]
 
 [tool.pyright]
 pythonVersion = "3.12"

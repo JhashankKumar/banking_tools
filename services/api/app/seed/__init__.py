@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.db.base import Base
 from app.modules.cases.models import case_transactions
+from app.modules.detection.service import run_detection
 from app.modules.users.models import Role, User
 from app.seed.scenarios import all_scenarios
 
@@ -20,9 +21,10 @@ SeedSummary = dict[str, int]
 
 
 def seed(session: Session, *, demo_password: str) -> SeedSummary:
-    """Upsert every scenario by primary key and create missing demo users. Flushes, never commits.
+    """Upsert every scenario, run detection, and create missing demo users. Flushes, never commits.
 
-    Existing demo users are left untouched (their password is not reset).
+    Alerts come from the detection rules, not from seed data. Existing demo users are left
+    untouched (their password is not reset).
     """
     for scenario in all_scenarios():
         for record in scenario.records:
@@ -34,6 +36,8 @@ def seed(session: Session, *, demo_password: str) -> SeedSummary:
                 .values([{"case_id": c, "transaction_id": t} for c, t in scenario.case_links])
                 .on_conflict_do_nothing()
             )
+
+    run_detection(session)
 
     existing = set(session.scalars(select(User.username).where(User.username.in_(DEMO_USERS))))
     for username, role in DEMO_USERS.items():
