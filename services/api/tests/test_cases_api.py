@@ -43,7 +43,7 @@ def test_analyst_reads_fr_10482(client: TestClient, analyst_headers: dict[str, s
         "title": "Rapid onward transfer — potential connected-funds pattern requiring review",
         "status": "open",
         "opened_at": "2026-09-15T05:00:00Z",
-        "alert_ids": ["AL-10482"],
+        "alert_ids": ["AL-ROT-TX-1002"],
         "transaction_count": 2,
         "is_synthetic": True,
     }
