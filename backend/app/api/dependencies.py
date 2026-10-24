@@ -1,7 +1,7 @@
 """Request-scoped dependencies: database session, current user, and permission checks."""
 
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Annotated
 
 import jwt
@@ -68,3 +68,39 @@ def require(permission: Permission) -> Callable[..., User]:
         return user
 
     return dependency
+
+
+class AuditTrail:
+    """Records audit events for the current request, with its actor and request ID filled in."""
+
+    def __init__(self, session: Session, request: Request, user: User) -> None:
+        self._session = session
+        self._request_id = request_id_of(request)
+        self._actor_id = user.id
+
+    def success(
+        self,
+        action: str,
+        *,
+        resource_type: str,
+        resource_id: str | None = None,
+        details: Mapping[str, str] | None = None,
+    ) -> None:
+        audit.record(
+            self._session,
+            action=action,
+            outcome=Outcome.SUCCESS,
+            actor_user_id=self._actor_id,
+            request_id=self._request_id,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            details=details,
+        )
+
+
+def get_audit_trail(session: DbSession, request: Request, user: CurrentUser) -> AuditTrail:
+    return AuditTrail(session, request, user)
+
+
+# The current user is resolved once per request, so this shares it with the permission check.
+Audit = Annotated[AuditTrail, Depends(get_audit_trail)]

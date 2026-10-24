@@ -41,6 +41,12 @@ class ForbiddenError(AppError):
     message = "Forbidden"
 
 
+class NotFoundError(AppError):
+    """Base for "<thing> not found" errors; subclasses set only `code` and `message`."""
+
+    status = 404
+
+
 def error_response(
     status: int,
     code: str,

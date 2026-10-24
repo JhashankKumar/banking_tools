@@ -1,6 +1,7 @@
 """Test helpers for creating synthetic users and authenticating as them."""
 
 from fastapi.testclient import TestClient
+from httpx2 import Response
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
@@ -36,3 +37,18 @@ def auth_header(
     client: TestClient, username: str, password: str = DEFAULT_PASSWORD
 ) -> dict[str, str]:
     return {"Authorization": f"Bearer {login(client, username, password)}"}
+
+
+def signed_in(
+    client: TestClient, session: Session, role: Role, username: str | None = None
+) -> dict[str, str]:
+    """Creates an active user with `role` (default username e.g. "analyst.one") and signs in."""
+    name = username or f"{role.value}.one"
+    make_user(session, username=name, role=role)
+    return auth_header(client, name)
+
+
+def assert_error(response: Response, status: int, code: str) -> None:
+    """The response is the API error envelope with this status and registry code."""
+    assert response.status_code == status, response.text
+    assert response.json()["error"]["code"] == code
