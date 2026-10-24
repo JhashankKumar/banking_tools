@@ -1,8 +1,8 @@
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.pagination import PageParams
-from app.core.errors import AppError
+from app.api.pagination import PageParams, count_rows, paged
+from app.core.errors import NotFoundError
 from app.modules.alerts.schemas import AlertOut, RuleRef
 from app.modules.cases.models import Alert
 from app.modules.detection.registry import get_rule
@@ -10,8 +10,7 @@ from app.modules.evidence.models import Evidence
 from app.modules.transactions.schemas import PartyRef
 
 
-class AlertNotFoundError(AppError):
-    status = 404
+class AlertNotFoundError(NotFoundError):
     code = "ALERT_NOT_FOUND"
     message = "Alert not found"
 
@@ -58,10 +57,8 @@ def list_alerts(
         query = query.where(Alert.case_id == case_id)
     if rule_id is not None:
         query = query.where(Alert.rule_id == rule_id)
-    total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
-    alerts = session.scalars(
-        query.order_by(Alert.triggered_at.desc(), Alert.id).limit(page.limit).offset(page.offset)
-    ).all()
+    total = count_rows(session, query)
+    alerts = session.scalars(paged(query.order_by(Alert.triggered_at.desc(), Alert.id), page)).all()
     evidence = _evidence_ids(session, list(alerts))
     return [_to_out(a, evidence.get(a.id)) for a in alerts], total
 
