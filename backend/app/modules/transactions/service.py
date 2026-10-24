@@ -1,7 +1,7 @@
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.pagination import PageParams
+from app.api.pagination import PageParams, count_rows, paged
 from app.modules.cases.models import case_transactions
 from app.modules.evidence.models import Evidence
 from app.modules.transactions.models import Transaction
@@ -23,19 +23,20 @@ def list_case_transactions(
     in_case = select(case_transactions.c.transaction_id).where(
         case_transactions.c.case_id == case_id
     )
-    total = session.scalar(select(func.count()).select_from(in_case.subquery())) or 0
+    total = count_rows(session, in_case)
     rows = session.execute(
-        select(Transaction, Evidence.id)
-        .outerjoin(
-            Evidence,
-            (Evidence.case_id == case_id)
-            & (Evidence.source_table == "transactions")
-            & (Evidence.source_record_id == Transaction.id),
+        paged(
+            select(Transaction, Evidence.id)
+            .outerjoin(
+                Evidence,
+                (Evidence.case_id == case_id)
+                & (Evidence.source_table == "transactions")
+                & (Evidence.source_record_id == Transaction.id),
+            )
+            .where(Transaction.id.in_(in_case))
+            .order_by(Transaction.occurred_at, Transaction.id),
+            page,
         )
-        .where(Transaction.id.in_(in_case))
-        .order_by(Transaction.occurred_at, Transaction.id)
-        .limit(page.limit)
-        .offset(page.offset)
     ).all()
     items = [
         TransactionOut(

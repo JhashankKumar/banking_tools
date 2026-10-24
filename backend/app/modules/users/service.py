@@ -2,12 +2,12 @@
 
 import uuid
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.pagination import PageParams
-from app.core.errors import AppError
+from app.api.pagination import PageParams, count_rows, paged
+from app.core.errors import AppError, NotFoundError
 from app.core.security import hash_password
 from app.modules.audit import service as audit
 from app.modules.audit.models import Outcome
@@ -21,8 +21,7 @@ class DuplicateUsernameError(AppError):
     message = "Username already exists"
 
 
-class UserNotFoundError(AppError):
-    status = 404
+class UserNotFoundError(NotFoundError):
     code = "USER_NOT_FOUND"
     message = "User not found"
 
@@ -34,10 +33,9 @@ class SelfLockoutError(AppError):
 
 
 def list_users(session: Session, page: PageParams) -> tuple[list[User], int]:
-    total = session.scalar(select(func.count()).select_from(User)) or 0
-    users = session.scalars(
-        select(User).order_by(User.username).limit(page.limit).offset(page.offset)
-    ).all()
+    query = select(User).order_by(User.username)
+    total = count_rows(session, query)
+    users = session.scalars(paged(query, page)).all()
     return list(users), total
 
 

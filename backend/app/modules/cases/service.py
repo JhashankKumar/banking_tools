@@ -1,14 +1,13 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.pagination import PageParams
-from app.core.errors import AppError
+from app.api.pagination import PageParams, count_rows, paged
+from app.core.errors import NotFoundError
 from app.modules.cases.models import Alert, Case, case_transactions
 from app.modules.cases.schemas import CaseOut, CaseSummaryOut
 
 
-class CaseNotFoundError(AppError):
-    status = 404
+class CaseNotFoundError(NotFoundError):
     code = "CASE_NOT_FOUND"
     message = "Case not found"
 
@@ -40,7 +39,7 @@ def ensure_case_exists(session: Session, case_id: str) -> None:
 
 
 def list_cases(session: Session, page: PageParams) -> tuple[list[CaseSummaryOut], int]:
-    total = session.scalar(select(func.count()).select_from(Case)) or 0
+    total = count_rows(session, select(Case))
     alert_counts = select(Alert.case_id, func.count().label("n")).group_by(Alert.case_id).subquery()
     tx_counts = (
         select(case_transactions.c.case_id, func.count().label("n"))
@@ -48,12 +47,13 @@ def list_cases(session: Session, page: PageParams) -> tuple[list[CaseSummaryOut]
         .subquery()
     )
     rows = session.execute(
-        select(Case, alert_counts.c.n, tx_counts.c.n)
-        .outerjoin(alert_counts, alert_counts.c.case_id == Case.id)
-        .outerjoin(tx_counts, tx_counts.c.case_id == Case.id)
-        .order_by(Case.opened_at.desc(), Case.id)
-        .limit(page.limit)
-        .offset(page.offset)
+        paged(
+            select(Case, alert_counts.c.n, tx_counts.c.n)
+            .outerjoin(alert_counts, alert_counts.c.case_id == Case.id)
+            .outerjoin(tx_counts, tx_counts.c.case_id == Case.id)
+            .order_by(Case.opened_at.desc(), Case.id),
+            page,
+        )
     ).all()
     items = [
         CaseSummaryOut(
