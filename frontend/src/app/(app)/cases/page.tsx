@@ -1,37 +1,32 @@
 "use client";
 
-import { useState } from "react";
-
-import { PageHeader } from "@/components/layout/PageHeader";
-import { QueryError } from "@/components/ui/QueryError";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { Pagination } from "@/components/ui/Pagination";
-import { StatePanel } from "@/components/ui/StatePanel";
+import { QueryView } from "@/components/ui/QueryView";
 import { CasesTable } from "@/features/cases/components/CasesTable";
 import { useCasesList } from "@/features/cases/queries";
+import { useListFilters } from "@/lib/use-list-filters";
 
 export default function CasesPage() {
-  const [offset, setOffset] = useState(0);
-  const cases = useCasesList({ limit: 50, offset });
+  const list = useListFilters({});
+  const cases = useCasesList({ limit: list.limit, offset: list.offset });
   return (
-    <div className="flex flex-col gap-5 px-8 pt-7 pb-9">
-      <PageHeader
-        title="Cases"
-        subtitle="Investigation workspaces. Open a case to trace its money flow and evidence."
-      />
-      {cases.isPending ? (
-        <StatePanel kind="loading" title="Loading cases" />
-      ) : cases.isError ? (
-        <QueryError error={cases.error} noun="Cases" />
-      ) : (
-        <>
-          <CasesTable cases={cases.data.items} />
-          <Pagination
-            page={cases.data.page}
-            noun="cases"
-            onOffset={setOffset}
-          />
-        </>
-      )}
-    </div>
+    <PageLayout
+      title="Cases"
+      subtitle="Investigation workspaces. Open a case to trace its money flow and evidence."
+    >
+      <QueryView query={cases} noun="Cases" loading="Loading cases">
+        {(data) => (
+          <>
+            <CasesTable cases={data.items} />
+            <Pagination
+              page={data.page}
+              noun="cases"
+              onOffset={list.setOffset}
+            />
+          </>
+        )}
+      </QueryView>
+    </PageLayout>
   );
 }

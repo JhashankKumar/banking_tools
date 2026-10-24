@@ -2,11 +2,10 @@
 
 import { UserPlus } from "lucide-react";
 
-import { PageHeader } from "@/components/layout/PageHeader";
-import { QueryError } from "@/components/ui/QueryError";
+import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
-import { StatePanel } from "@/components/ui/StatePanel";
+import { QueryView } from "@/components/ui/QueryView";
 import { UserFormDrawer } from "@/features/users/components/UserFormDrawer";
 import { UsersTable } from "@/features/users/components/UsersTable";
 import { useUsersPage } from "@/features/users/hooks/useUsersPage";
@@ -14,36 +13,31 @@ import { useUsersPage } from "@/features/users/hooks/useUsersPage";
 export default function UsersPage() {
   const p = useUsersPage();
   return (
-    <div className="flex flex-col gap-5 px-8 pt-7 pb-9">
-      <PageHeader
-        title="Users"
-        subtitle="Supervisors create users, set roles, and deactivate accounts. Every change is audited."
-        action={
-          !p.users.isError && (
-            <Button variant="primary" onClick={p.openCreate}>
-              <UserPlus aria-hidden size={16} />
-              Create user
-            </Button>
-          )
-        }
-      />
-      {p.users.isPending ? (
-        <StatePanel kind="loading" title="Loading users" />
-      ) : p.users.isError ? (
-        <QueryError error={p.users.error} noun="Users" />
-      ) : (
-        <>
-          <UsersTable users={p.rows} meId={p.meId} onEdit={p.openEdit} />
-          {p.page && (
+    <PageLayout
+      title="Users"
+      subtitle="Supervisors create users, set roles, and deactivate accounts. Every change is audited."
+      action={
+        !p.users.isError && (
+          <Button variant="primary" onClick={p.openCreate}>
+            <UserPlus aria-hidden size={16} />
+            Create user
+          </Button>
+        )
+      }
+    >
+      <QueryView query={p.users} noun="Users" loading="Loading users">
+        {(data) => (
+          <>
+            <UsersTable users={data.items} meId={p.meId} onEdit={p.openEdit} />
             <Pagination
-              page={p.page}
+              page={data.page}
               noun="users"
               order="A–Z"
               onOffset={p.setOffset}
             />
-          )}
-        </>
-      )}
+          </>
+        )}
+      </QueryView>
       {p.drawer.mode === "edit" ? (
         <UserFormDrawer
           mode="edit"
@@ -59,6 +53,6 @@ export default function UsersPage() {
           onClose={p.closeDrawer}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }
