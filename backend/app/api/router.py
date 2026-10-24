@@ -10,7 +10,10 @@ from app.modules.alerts.router import router as alerts_router
 from app.modules.audit.router import router as audit_router
 from app.modules.auth.router import router as auth_router
 from app.modules.cases.router import router as cases_router
+from app.modules.copilot.router import router as copilot_router
 from app.modules.detection.router import router as rules_router
+from app.modules.notes.router import queue_router as notes_queue_router
+from app.modules.notes.router import router as notes_router
 from app.modules.users.router import router as users_router
 
 api_router = APIRouter(prefix="/api/v1")
@@ -38,6 +41,9 @@ def readiness(engine: Annotated[Engine, Depends(get_engine)]) -> dict[str, str] 
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
 api_router.include_router(cases_router)
+api_router.include_router(copilot_router)
+api_router.include_router(notes_router)
+api_router.include_router(notes_queue_router)
 api_router.include_router(audit_router)
 api_router.include_router(alerts_router)
 api_router.include_router(rules_router)

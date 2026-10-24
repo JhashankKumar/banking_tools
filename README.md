@@ -93,6 +93,24 @@ Sign in as one of the demo users above with your `OFI_DEMO_PASSWORD`:
 
 The browser never holds the API token: Next.js keeps it in an `httpOnly` cookie and forwards calls through `/api/*` (see `docs/project/API_AND_CODE_CONVENTIONS.md` §3.5).
 
+### 5. AI copilot (optional)
+
+The case page's copilot calls an open-weight model through [OpenRouter](https://openrouter.ai/). Add your own key to the repo-root `.env` (never commit it):
+
+```bash
+OPENROUTER_API_KEY=<your OpenRouter key>
+OPENROUTER_MODEL=openai/gpt-oss-120b   # any open-weight model with tool calling
+```
+
+Restart the API after changing `.env`. Without a key the copilot answers "unavailable"; everything else, including declining customer-information questions, still works. Limits: 20 questions per user per hour and US$2 per day across all users (`OFI_COPILOT_QUESTIONS_PER_HOUR`, `OFI_COPILOT_DAILY_BUDGET_USD`).
+
+Compare models on the seeded cases (capped spend, prints a table, writes nothing):
+
+```bash
+cd backend
+uv run python -m app.modules.copilot.compare --models openai/gpt-oss-120b,qwen/qwen3-235b-a22b-2507 --cap-usd 1.00
+```
+
 ## Checks
 
 These are the same checks CI runs on every push and pull request.
