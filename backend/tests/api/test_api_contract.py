@@ -9,13 +9,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.modules.users.models import Role
-from tests.factories import auth_header, make_user
+from tests.factories import make_user, signed_in
 
 
 @pytest.fixture
 def supervisor_headers(client: TestClient, db_session: Session) -> dict[str, str]:
-    make_user(db_session, username="supervisor.one", role=Role.SUPERVISOR)
-    return auth_header(client, "supervisor.one")
+    return signed_in(client, db_session, Role.SUPERVISOR)
 
 
 def assert_error(response_json: Any, code: str, request_id: str) -> dict[str, Any]:

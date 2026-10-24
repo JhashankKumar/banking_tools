@@ -12,7 +12,7 @@ from app.modules.parties.models import Account, AccountStatus
 from app.modules.transactions.models import Transaction, TransactionStatus
 from app.modules.users.models import Role
 from app.seed import seed
-from tests.factories import auth_header, make_user
+from tests.factories import assert_error, signed_in
 
 TX_1002_AT = datetime(2026, 9, 15, 4, 37, 42, tzinfo=UTC)
 
@@ -29,8 +29,7 @@ def seeded(db_session: Session) -> None:
 
 @pytest.fixture
 def analyst(client: TestClient, db_session: Session) -> dict[str, str]:
-    make_user(db_session, username="analyst.one", role=Role.ANALYST)
-    return auth_header(client, "analyst.one")
+    return signed_in(client, db_session, Role.ANALYST)
 
 
 def graph_of(client: TestClient, headers: dict[str, str], case_id: str, **params: int) -> Any:
@@ -181,15 +180,13 @@ def test_graph_edge_cap_truncates(
 def test_graph_window_bounds_422(client: TestClient, analyst: dict[str, str], hours: int) -> None:
     response = client.get(url("FR-10482"), params={"window_hours": hours}, headers=analyst)
 
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "VALIDATION_FAILED"
+    assert_error(response, 422, "VALIDATION_FAILED")
 
 
 def test_graph_unknown_case_404(client: TestClient, analyst: dict[str, str]) -> None:
     response = client.get(url("FR-99999"), headers=analyst)
 
-    assert response.status_code == 404
-    assert response.json()["error"]["code"] == "CASE_NOT_FOUND"
+    assert_error(response, 404, "CASE_NOT_FOUND")
 
 
 def test_graph_requires_auth(client: TestClient) -> None:
@@ -199,8 +196,7 @@ def test_graph_requires_auth(client: TestClient) -> None:
 def test_auditor_denied_graph_regardless_of_existence(
     client: TestClient, db_session: Session
 ) -> None:
-    make_user(db_session, username="auditor.one", role=Role.AUDITOR)
-    headers = auth_header(client, "auditor.one")
+    headers = signed_in(client, db_session, Role.AUDITOR)
 
     assert client.get(url("FR-10482"), headers=headers).status_code == 403
     assert client.get(url("FR-99999"), headers=headers).status_code == 403

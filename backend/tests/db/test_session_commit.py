@@ -8,14 +8,13 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_session
 from app.modules.users.models import Role
-from tests.factories import auth_header, make_user
+from tests.factories import signed_in
 
 
 def test_commit_failure_returns_500_instead_of_success(
     app: FastAPI, client: TestClient, db_session: Session
 ) -> None:
-    make_user(db_session, username="supervisor.one", role=Role.SUPERVISOR)
-    headers = auth_header(client, "supervisor.one")
+    headers = signed_in(client, db_session, Role.SUPERVISOR)
 
     def session_whose_commit_fails() -> Iterator[Session]:
         yield db_session

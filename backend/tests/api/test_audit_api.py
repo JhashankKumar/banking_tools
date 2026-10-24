@@ -2,14 +2,13 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.modules.users.models import Role
-from tests.factories import DEFAULT_PASSWORD, auth_header, make_user
+from tests.factories import DEFAULT_PASSWORD, auth_header, make_user, signed_in
 
 AUDIT_URL = "/api/v1/audit-logs"
 
 
 def test_auditor_reads_audit_logs(client: TestClient, db_session: Session) -> None:
-    make_user(db_session, username="auditor.one", role=Role.AUDITOR)
-    headers = auth_header(client, "auditor.one")
+    headers = signed_in(client, db_session, Role.AUDITOR)
 
     response = client.get(AUDIT_URL, headers=headers)
 
@@ -38,8 +37,7 @@ def test_analyst_cannot_read_audit_logs(client: TestClient, db_session: Session)
 
 
 def test_audit_view_is_itself_audited(client: TestClient, db_session: Session) -> None:
-    make_user(db_session, username="auditor.one", role=Role.AUDITOR)
-    headers = auth_header(client, "auditor.one")
+    headers = signed_in(client, db_session, Role.AUDITOR)
     client.get(AUDIT_URL, headers=headers)
 
     response = client.get(AUDIT_URL, params={"action": "audit.viewed"}, headers=headers)
@@ -49,8 +47,7 @@ def test_audit_view_is_itself_audited(client: TestClient, db_session: Session) -
 
 def test_audit_entries_contain_no_secrets(client: TestClient, db_session: Session) -> None:
     make_user(db_session, username="auditor.one", role=Role.AUDITOR)
-    make_user(db_session, username="supervisor.one", role=Role.SUPERVISOR)
-    supervisor = auth_header(client, "supervisor.one")
+    supervisor = signed_in(client, db_session, Role.SUPERVISOR)
     client.post(
         "/api/v1/users",
         json={"username": "new.analyst", "password": "brand-new-password-1", "role": "analyst"},

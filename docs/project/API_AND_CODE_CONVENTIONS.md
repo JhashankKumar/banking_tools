@@ -191,7 +191,8 @@ Starlette `HTTPException` (404 for unknown routes, 405) is mapped to the same en
 
 - **Request ID:** set by middleware, stored in a `contextvar`, added to every log record by a logging filter, echoed in `X-Request-ID`, included in every error body and audit event.
 - **Logging:** structured, one line per event, `logging.getLogger(__name__)`. Never log request/response bodies, passwords, tokens, `Authorization` headers, or record contents. Tests assert this for auth endpoints.
-- **Audit:** written by services through `app.modules.audit.service.record(...)`, never with secrets. On error paths that must keep the audit row, commit it before raising.
+- **Audit:** written by services through `app.modules.audit.service.record(...)`, never with secrets. On error paths that must keep the audit row, commit it before raising. Routers record successful views with the `Audit` dependency (`trail.success("case.viewed", resource_type="case", resource_id=case_id)`), which fills in the actor and request ID.
+- **Lists:** `count_rows(session, query)` for `page.total` and `paged(query, page)` for the slice (`app/api/pagination.py`). "Not found" errors subclass `NotFoundError` (404) and set only `code` and `message`.
 - **Transactions:** one session per request; it commits before the response is sent (`Depends(get_session, scope="function")`).
 - **Config:** only through typed `Settings`. No `os.getenv` in modules. Security controls are switched by typed settings with secure defaults, never by commenting code out.
 - **Outbound calls** (LLM provider): distinguish "the provider failed" (`MODEL_UNAVAILABLE`, retryable) from "the provider answered no/invalid" (validation failure). Timeouts on every call.
@@ -202,6 +203,7 @@ Starlette `HTTPException` (404 for unknown routes, 405) is mapped to the same en
 - Each endpoint has tests for: success shape, 401, 403 (with audit row), 404, 422 (with `details`), and pagination bounds.
 - File names by topic (`test_cases_api.py`), never numbered (`test_views7.py`). Regression tests describe the behaviour in their name.
 - No `sys.modules` stubbing; inject dependencies (`dependency_overrides`, fake model provider).
+- Helpers in `tests/factories.py`: `signed_in(client, session, Role.X)` returns auth headers for a new user of that role; `assert_error(response, status, code)` checks the error envelope.
 
 ---
 
@@ -326,6 +328,17 @@ export type Transaction = z.output<typeof transactionSchema>;
 - Every data view handles **loading, empty, error, success**, and **permission denied** (403) where applicable.
 - Use `components/ui` primitives rather than raw interactive elements, so focus, labels, and keyboard behaviour are consistent. Every icon-only control has an accessible name; status is never shown by colour alone.
 - Component files are PascalCase with named exports; props types live with the component.
+- Reuse the shared building blocks instead of re-creating them:
+
+  | Need | Use |
+  | --- | --- |
+  | loading → error (403/404) → empty → content for a query | `components/ui/QueryView` |
+  | page frame with heading and action | `components/layout/PageLayout` |
+  | list filters | `components/ui/FilterBar` (`FilterBar`, `SearchInput`, `FilterSelect`) |
+  | table with empty message; clickable row with a real link | `Table empty=…`, `LinkRow` + `LinkRow.Link` |
+  | status with icon and text | `components/ui/StatusChip` with a per-domain `StatusStyles` map |
+  | failure of a user action (form, sign-in) | `components/ui/ErrorBanner` + `asApiError()` |
+  | paged list state (filter change → page 1) | `lib/use-list-filters` (`LIST_PAGE_SIZE` in `lib/config.ts`) |
 
 ### 3.8 Frontend tests
 
@@ -333,6 +346,7 @@ export type Transaction = z.output<typeof transactionSchema>;
 - Test each feature's `api.ts` + `schemas.ts` with fixture JSON shaped exactly like the backend envelope (including invalid shapes).
 - Hook tests use a fresh QueryClient per test.
 - Mock at the HTTP boundary (fetch), not by mocking our own modules.
+- Test helpers in `src/test/`: `stubFetch(response | handler | routes)`, `jsonResponse`, `apiError(code, status)`, `callsOf(mock)` (`http.ts`); `caseRoutes()` and API-shaped fixtures (`fixtures.ts`); `renderWithClient`, `renderHookWithClient`, `ME` (`render.tsx`); `vi.mock("next/navigation", () => import("@/test/next-navigation"))` with `router` / `navigation`. `setup.ts` restores stubbed globals, env and the router mock after every test.
 
 ---
 
