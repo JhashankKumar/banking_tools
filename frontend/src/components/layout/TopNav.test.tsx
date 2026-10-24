@@ -1,15 +1,17 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 
+import { navigation } from "@/test/next-navigation";
 import { ME, renderWithClient } from "@/test/render";
 
 import { TopNav } from "./TopNav";
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
-  usePathname: () => "/alerts",
-}));
+vi.mock("next/navigation", () => import("@/test/next-navigation"));
+
+beforeEach(() => {
+  navigation.pathname = "/alerts";
+});
 
 describe("TopNav", () => {
   test("shows Audit only for auditor", () => {
