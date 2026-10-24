@@ -58,3 +58,5 @@ Thumbs.db
 .claude/settings.local.json
 
 docs/superpowers
+# Local browser-check artifacts (Playwright MCP)
+.playwright-mcp/
