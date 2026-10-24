@@ -5,14 +5,16 @@ from decimal import Decimal
 
 import pytest
 from alembic import command
-from sqlalchemy import Engine
+from sqlalchemy import Engine, inspect
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.modules.cases.models import Alert, Case, CaseStatus, PartyType
 from app.modules.evidence.models import Evidence, EvidenceLabel, EvidenceType
+from app.modules.notes.models import CaseNote, NoteOrigin, NoteStatus
 from app.modules.parties.models import Account, AccountStatus, Beneficiary, IdentifierType
 from app.modules.transactions.models import Transaction, TransactionStatus
+from app.modules.users.models import Role, User
 from tests.conftest import TEST_DATABASE_URL, alembic_config
 
 SCENARIO = "test-schema"
@@ -177,3 +179,43 @@ def test_alert_transaction_ids_and_metrics_round_trip(db_session: Session) -> No
     assert stored.transaction_ids == ["TX-T0", "TX-T1"]
     assert stored.metrics == {"elapsed_seconds": "328"}
     assert stored.entity_type == PartyType.BENEFICIARY
+
+
+def test_migration_creates_copilot_and_notes_tables(engine: Engine) -> None:
+    tables = set(inspect(engine).get_table_names())
+
+    assert {
+        "copilot_chats",
+        "copilot_messages",
+        "copilot_runs",
+        "case_notes",
+        "case_note_versions",
+        "note_reviews",
+        "case_status_changes",
+    } <= tables
+
+
+def test_one_pending_note_per_case_enforced_by_database(db_session: Session) -> None:
+    case = Case(
+        id="FR-T1",
+        title="Schema test case",
+        status=CaseStatus.OPEN,
+        opened_at=datetime(2026, 9, 15, tzinfo=UTC),
+        scenario_id=SCENARIO,
+    )
+    author = User(username="note.author", password_hash="x", role=Role.ANALYST)
+    db_session.add_all([case, author])
+    db_session.flush()
+    for _ in range(2):
+        db_session.add(
+            CaseNote(
+                case_id="FR-T1",
+                author_id=author.id,
+                status=NoteStatus.AWAITING_REVIEW,
+                origin=NoteOrigin.WRITTEN,
+                current_version=1,
+            )
+        )
+
+    with pytest.raises(IntegrityError):
+        db_session.flush()
