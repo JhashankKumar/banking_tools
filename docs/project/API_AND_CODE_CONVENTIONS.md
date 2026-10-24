@@ -237,7 +237,7 @@ Features import from `lib/` and `components/`; features do not import each other
 
 `lib/api-client.ts` is the single place that talks HTTP:
 
-- Built on `fetch`; base URL from typed config.
+- Built on `fetch`; base URL `/bff` (`lib/config.ts`). Paths are API paths without `/api/v1`, e.g. `apiClient.get("/cases", …)` → `/bff/cases` → `${OFI_API_URL}/api/v1/cases`.
 - Every request has a timeout (`AbortSignal.timeout`) and forwards the caller's `signal` (TanStack Query passes one), so navigating away cancels requests.
 - Unwraps the envelope: returns `data` (and `page` for lists).
 - Turns every non-2xx response into `ApiError` (a real `class ApiError extends Error` with `status`, `code`, `message`, `details`, `requestId`). Network failures and timeouts become `ApiError` with code `NETWORK_ERROR`.
@@ -301,7 +301,17 @@ export type Transaction = z.output<typeof transactionSchema>;
 ### 3.5 Auth in the browser
 
 - The access token is never stored in `localStorage` or `sessionStorage` and never readable by browser JavaScript.
-- Next.js server code (route handlers) holds the token in an `httpOnly`, `Secure`, `SameSite=Lax` cookie and forwards it to the API. Decided in detail in Milestone 4.
+- Next.js server code (route handlers) holds the token in an `httpOnly`, `Secure` (in production), `SameSite=Lax`, 30-minute cookie `ofi_session` and forwards it to the API. Backend-for-frontend routes (Milestone 4):
+
+  | Route | What it does |
+  | --- | --- |
+  | `POST /session/login` | JSON `{username, password}` → calls `POST /api/v1/auth/token` server-side, sets the cookie, returns 204; on failure returns the API's error envelope unchanged. |
+  | `POST /session/logout` | Clears the cookie (204). |
+  | `GET/POST/PATCH /bff/{path}` | Forwards to `${OFI_API_URL}/api/v1/{path}` with `Authorization: Bearer <cookie>`, passing status, body and `X-Request-ID` through. No cookie → 401 `AUTH_NOT_AUTHENTICATED`. Path segments must match `^[A-Za-z0-9._-]+$` (no `.`/`..`) → else 400. API unreachable → 503 `SERVICE_UNAVAILABLE`. |
+
+- Non-GET requests to `/session/*` and `/bff/*` require an `Origin` header equal to the app's origin, otherwise 403 (CSRF defence on top of `SameSite=Lax`).
+- `src/proxy.ts` redirects page requests without the cookie to `/login?next=…`. It is a convenience: the API decides authorisation.
+- `OFI_API_URL` is server-only (`apps/web/.env.local`); it must never be prefixed `NEXT_PUBLIC_`.
 - Role-based UI hiding is a convenience only; the API enforces permissions.
 
 ### 3.6 Forms

@@ -24,6 +24,8 @@ class TransactionFact:
     status: TransactionStatus
     reversed_by: tuple[str, ...] = ()  # IDs of reversal records pointing at this transaction
     reverses: str | None = None  # set when this record is itself a reversal of another
+    rail: str | None = None
+    reference: str | None = None
 
 
 def is_completed(fact: TransactionFact) -> bool:

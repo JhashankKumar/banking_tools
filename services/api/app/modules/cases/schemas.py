@@ -5,6 +5,16 @@ from pydantic import BaseModel
 from app.modules.cases.models import CaseStatus
 
 
+class CaseSummaryOut(BaseModel):
+    id: str
+    title: str
+    status: CaseStatus
+    opened_at: datetime
+    alert_count: int
+    transaction_count: int
+    is_synthetic: bool
+
+
 class CaseOut(BaseModel):
     id: str
     title: str

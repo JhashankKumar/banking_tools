@@ -75,12 +75,23 @@ Demo users (synthetic; roles are role-based access only):
 
 ### 4. Frontend (`apps/web`)
 
+Keep the API from step 3 running, then in a second terminal:
+
 ```bash
 cd apps/web
+cp .env.example .env.local     # OFI_API_URL: where the API listens (server-only, never sent to the browser)
 pnpm install
-pnpm dev
+pnpm dev                       # or: pnpm build && pnpm start
 # http://localhost:3000
 ```
+
+Sign in as one of the demo users above with your `OFI_DEMO_PASSWORD`:
+
+- `analyst.demo` lands on **Alerts**. Open `AL-ROT-TX-1002` → case **FR-10482** shows the money path ACC-001 → BEN-B → ACC-C in the graph ("3D look", or "3D view" to rotate), the timeline in IST, and the evidence IDs.
+- `supervisor.demo` also sees **Users** (create users, change roles, deactivate).
+- `auditor.demo` sees only the **Audit log**.
+
+The browser never holds the API token: Next.js keeps it in an `httpOnly` cookie and forwards calls through `/bff/*` (see `docs/project/API_AND_CODE_CONVENTIONS.md` §3.5).
 
 ## Checks
 

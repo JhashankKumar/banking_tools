@@ -6,5 +6,7 @@ export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
     environment: "jsdom",
+    env: { TZ: "UTC" },
+    setupFiles: ["./src/test/setup.ts"],
   },
 });

@@ -91,6 +91,7 @@ def test_alert_detail_matches_rule_output(client: TestClient, analyst: dict[str,
                 "window_seconds": "1800",
                 "min_onward_ratio": "0.50",
             },
+            "evidence_id": "EV-10482-AL-ROT-TX-1002",
             "is_synthetic": True,
         }
     }
@@ -138,3 +139,9 @@ def test_alerts_pagination_bounds(
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "VALIDATION_FAILED"
+
+
+def test_alert_detail_includes_evidence_id(client: TestClient, analyst: dict[str, str]) -> None:
+    data = client.get(ALERT_URL, headers=analyst).json()["data"]
+
+    assert data["evidence_id"] == "EV-10482-AL-ROT-TX-1002"

@@ -62,3 +62,15 @@ def test_audit_entries_contain_no_secrets(client: TestClient, db_session: Sessio
 
     for secret in (DEFAULT_PASSWORD, "brand-new-password-1", "$argon2", "Bearer", "eyJ"):
         assert secret not in response.text
+
+
+def test_audit_entries_include_actor_username(client: TestClient, db_session: Session) -> None:
+    make_user(db_session, username="auditor.one", role=Role.AUDITOR)
+    client.post("/api/v1/auth/token", data={"username": "auditor.one", "password": "wrong-pass"})
+    headers = auth_header(client, "auditor.one")
+
+    items = client.get(AUDIT_URL, headers=headers).json()["data"]
+
+    by_action = {i["action"]: i for i in items}
+    assert by_action["auth.login.succeeded"]["actor_username"] == "auditor.one"
+    assert by_action["auth.login.failed"]["actor_username"] is None

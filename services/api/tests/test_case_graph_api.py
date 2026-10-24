@@ -121,6 +121,8 @@ def test_fr_10482_graph_exact(client: TestClient, analyst: dict[str, str]) -> No
         "status": "settled",
         "is_final": True,
         "reversed_by": [],
+        "rail": "IMPS",
+        "reference": "SYN-REF-1001",
         "in_case": True,
         "evidence_id": "EV-10482-TX-1001",
     }
@@ -245,3 +247,11 @@ def test_busy_counterparty_does_not_crowd_out_onward_transfers(
     assert "TX-ONWARD" in ids
     assert len(ids) == 200
     assert data["truncated"] is True
+
+
+def test_graph_edges_include_rail_and_reference(
+    client: TestClient, analyst: dict[str, str]
+) -> None:
+    edges = {e["transaction_id"]: e for e in graph_of(client, analyst, "FR-10482")["edges"]}
+
+    assert (edges["TX-1002"]["rail"], edges["TX-1002"]["reference"]) == ("IMPS", "SYN-REF-1002")
