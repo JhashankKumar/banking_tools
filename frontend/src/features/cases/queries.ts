@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
+import type { QueryOpts } from "@/lib/query-client";
+
 import {
   fetchCase,
   fetchCaseGraph,
@@ -37,7 +39,7 @@ export const useCase = (id: string) =>
 export const useCaseTransactions = (
   id: string,
   p: PageParams,
-  { enabled = true } = {},
+  { enabled = true }: QueryOpts = {},
 ) =>
   useQuery({
     queryKey: caseKeys.transactions(id, p),
@@ -49,7 +51,7 @@ export const useMoneyPaths = (
   id: string,
   maxHops: number,
   windowHours: number,
-  { enabled = true } = {},
+  { enabled = true }: QueryOpts = {},
 ) =>
   useQuery({
     queryKey: caseKeys.moneyPaths(id, maxHops, windowHours),
@@ -60,7 +62,7 @@ export const useMoneyPaths = (
 export const useCaseGraph = (
   id: string,
   windowHours: number,
-  { enabled = true } = {},
+  { enabled = true }: QueryOpts = {},
 ) =>
   useQuery({
     queryKey: caseKeys.graph(id, windowHours),

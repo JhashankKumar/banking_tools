@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+
+import { callsOf, stubFetch } from "@/test/http";
 
 import { POST } from "./route";
 import { POST as LOGOUT } from "../logout/route";
@@ -17,21 +19,10 @@ function loginRequest(body: unknown, origin: string | null = ORIGIN) {
 }
 
 beforeEach(() => vi.stubEnv("OFI_API_URL", "http://api.test"));
-afterEach(() => {
-  vi.unstubAllGlobals();
-  vi.unstubAllEnvs();
-});
 
 describe("POST /auth/login", () => {
   test("non-JSON success from the API becomes a 502 envelope", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response("<html>proxy page</html>", { status: 200 }),
-        ),
-    );
+    stubFetch(new Response("<html>proxy page</html>", { status: 200 }));
 
     const response = await POST(
       loginRequest({ username: "analyst.demo", password: "secret-password" }),
@@ -42,14 +33,13 @@ describe("POST /auth/login", () => {
   });
 
   test("login sets httpOnly session cookie and returns 204", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
+    const fetchMock = stubFetch(
       Response.json({
         access_token: "tok-123",
         token_type: "bearer",
         expires_in: 1800,
       }),
     );
-    vi.stubGlobal("fetch", fetchMock);
 
     const response = await POST(
       loginRequest({ username: "analyst.demo", password: "secret-password" }),
@@ -62,7 +52,7 @@ describe("POST /auth/login", () => {
     expect(cookie).toMatch(/SameSite=lax/i);
     expect(cookie).toContain("Max-Age=1800");
     expect(cookie).toContain("Path=/");
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [[url, init]] = callsOf(fetchMock);
     expect(url).toBe("http://api.test/api/v1/auth/token");
     expect(String(init.body)).toBe(
       "username=analyst.demo&password=secret-password",
@@ -78,10 +68,7 @@ describe("POST /auth/login", () => {
         request_id: "r1",
       },
     };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(Response.json(body, { status: 401 })),
-    );
+    stubFetch(Response.json(body, { status: 401 }));
 
     const response = await POST(
       loginRequest({ username: "analyst.demo", password: "wrong" }),
@@ -93,7 +80,7 @@ describe("POST /auth/login", () => {
   });
 
   test("login rejects cross-origin", async () => {
-    vi.stubGlobal("fetch", vi.fn());
+    stubFetch();
 
     const response = await POST(
       loginRequest(

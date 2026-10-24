@@ -1,3 +1,5 @@
+import { jsonResponse } from "./http";
+
 /** API-shaped JSON (snake_case, envelopes) matching the seeded FR-10482 data. */
 
 export const ALERT_JSON = {
@@ -189,35 +191,24 @@ export const page = <T>(data: T[], limit = 50) => ({
   page: { total: data.length, limit, offset: 0 },
 });
 
-/** fetch stub routing by path prefix; unmatched paths return 404 envelopes. */
-export function routeFetch(routes: Record<string, () => Response>) {
-  return (input: string | URL | Request) => {
-    const url =
-      typeof input === "string"
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : input.url;
-    const path = url.replace(/^https?:\/\/[^/]+/, "");
-    const key = Object.keys(routes)
-      .sort((a, b) => b.length - a.length)
-      .find((prefix) => path.startsWith(prefix));
-    if (key) return Promise.resolve(routes[key]());
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          error: {
-            code: "NOT_FOUND",
-            message: "Not found",
-            details: [],
-            request_id: null,
-          },
-        }),
-        {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        },
-      ),
-    );
-  };
-}
+export const USER_JSON = {
+  id: "u-analyst",
+  username: "analyst.demo",
+  role: "analyst",
+  is_active: true,
+  created_at: "2026-09-15T04:31:00Z",
+  updated_at: "2026-09-15T04:31:00Z",
+};
+
+/** API routes for case FR-10482 as the case page loads them; override any route per test. */
+export const caseRoutes = (overrides: Record<string, () => Response> = {}) => ({
+  "/api/cases/FR-10482/transactions": () =>
+    jsonResponse(page(TRANSACTIONS_JSON)),
+  "/api/cases/FR-10482/money-paths": () =>
+    jsonResponse({ data: MONEY_PATHS_JSON }),
+  "/api/cases/FR-10482/graph": () => jsonResponse({ data: GRAPH_JSON }),
+  "/api/cases/FR-10482": () => jsonResponse({ data: CASE_JSON }),
+  "/api/alerts": () => jsonResponse(page([ALERT_JSON])),
+  "/api/rules": () => jsonResponse({ data: RULES_JSON }),
+  ...overrides,
+});
