@@ -31,12 +31,15 @@ async function toApiError(response: Response): Promise<ApiError> {
     });
   }
   const { code, message, details, request_id } = parsed.data.error;
+  const retryAfter = Number(response.headers.get("Retry-After"));
   return new ApiError({
     status: response.status,
     code,
     message,
     details,
     requestId: request_id,
+    retryAfter:
+      Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null,
   });
 }
 

@@ -9,6 +9,8 @@ interface ApiErrorInit {
   message: string;
   details?: FieldProblem[];
   requestId?: string | null;
+  /** Seconds until a retry may succeed (from Retry-After on 429), else null. */
+  retryAfter?: number | null;
 }
 
 /** Every failed API call surfaces as this error (see API_AND_CODE_CONVENTIONS §1.2, §3.2). */
@@ -17,6 +19,7 @@ export class ApiError extends Error {
   readonly code: string;
   readonly details: FieldProblem[];
   readonly requestId: string | null;
+  readonly retryAfter: number | null;
 
   constructor({
     status,
@@ -24,6 +27,7 @@ export class ApiError extends Error {
     message,
     details = [],
     requestId = null,
+    retryAfter = null,
   }: ApiErrorInit) {
     super(message);
     this.name = "ApiError";
@@ -31,6 +35,7 @@ export class ApiError extends Error {
     this.code = code;
     this.details = details;
     this.requestId = requestId;
+    this.retryAfter = retryAfter;
   }
 }
 
