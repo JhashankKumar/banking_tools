@@ -1,27 +1,17 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
-import { jsonResponse, renderWithClient } from "@/test/render";
+import { USER_JSON } from "@/test/fixtures";
+import { apiError, callsOf, jsonResponse, stubFetch } from "@/test/http";
+import { renderWithClient } from "@/test/render";
 
 import { userSchema } from "../schemas";
 import { UserFormDrawer } from "./UserFormDrawer";
 
-const USER_JSON = {
-  id: "u-analyst",
-  username: "analyst.demo",
-  role: "analyst",
-  is_active: true,
-  created_at: "2026-09-15T04:31:00Z",
-  updated_at: "2026-09-15T04:31:00Z",
-};
 const USER = userSchema.parse(USER_JSON);
-
-const errorBody = (code: string, details: object[] = []) => ({
-  error: { code, message: "Rejected", details, request_id: "req-9" },
-});
-
-afterEach(() => vi.unstubAllGlobals());
+const saved = (fields: object = {}, status = 200) =>
+  jsonResponse({ data: { ...USER_JSON, ...fields } }, status);
 
 async function fillCreate(password = "long-enough-pass") {
   const user = userEvent.setup();
@@ -32,18 +22,12 @@ async function fillCreate(password = "long-enough-pass") {
 
 describe("UserFormDrawer", () => {
   test("UserFormDrawer maps 422 password detail to field error", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve(
-          jsonResponse(
-            errorBody("VALIDATION_FAILED", [
-              { field: "body.password", message: "Password is too common" },
-            ]),
-            422,
-          ),
-        ),
-      ),
+    stubFetch(
+      apiError("VALIDATION_FAILED", 422, {
+        details: [
+          { field: "body.password", message: "Password is too common" },
+        ],
+      }),
     );
     renderWithClient(<UserFormDrawer mode="create" open onClose={vi.fn()} />);
 
@@ -57,12 +41,7 @@ describe("UserFormDrawer", () => {
   });
 
   test("maps 409 USER_USERNAME_TAKEN to username", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve(jsonResponse(errorBody("USER_USERNAME_TAKEN"), 409)),
-      ),
-    );
+    stubFetch(apiError("USER_USERNAME_TAKEN", 409));
     renderWithClient(<UserFormDrawer mode="create" open onClose={vi.fn()} />);
 
     await fillCreate();
@@ -77,8 +56,7 @@ describe("UserFormDrawer", () => {
   });
 
   test("short password is rejected before any request", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubFetch();
     renderWithClient(<UserFormDrawer mode="create" open onClose={vi.fn()} />);
 
     await fillCreate("short");
@@ -90,24 +68,9 @@ describe("UserFormDrawer", () => {
   });
 
   test("create posts username, password and role, then closes", async () => {
-    const fetchMock = vi.fn(() =>
-      Promise.resolve(
-        jsonResponse(
-          {
-            data: {
-              id: "u-new",
-              username: "new.analyst",
-              role: "auditor",
-              is_active: true,
-              created_at: "2026-09-15T04:31:00Z",
-              updated_at: "2026-09-15T04:31:00Z",
-            },
-          },
-          201,
-        ),
-      ),
+    const fetchMock = stubFetch(
+      saved({ id: "u-new", username: "new.analyst", role: "auditor" }, 201),
     );
-    vi.stubGlobal("fetch", fetchMock);
     const onClose = vi.fn();
     renderWithClient(<UserFormDrawer mode="create" open onClose={onClose} />);
 
@@ -118,10 +81,7 @@ describe("UserFormDrawer", () => {
     await fillCreate();
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
+    const [[url, init]] = callsOf(fetchMock);
     expect(url).toBe("/api/users");
     expect(init.method).toBe("POST");
     expect(JSON.parse(init.body as string)).toEqual({
@@ -132,21 +92,7 @@ describe("UserFormDrawer", () => {
   });
 
   test("edit sends only changed fields", async () => {
-    const fetchMock = vi.fn(() =>
-      Promise.resolve(
-        jsonResponse({
-          data: {
-            id: "u-analyst",
-            username: "analyst.demo",
-            role: "analyst",
-            is_active: false,
-            created_at: "2026-09-15T04:31:00Z",
-            updated_at: "2026-09-15T04:40:00Z",
-          },
-        }),
-      ),
-    );
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubFetch(saved({ is_active: false }));
     const onClose = vi.fn();
     renderWithClient(
       <UserFormDrawer mode="edit" user={USER} open onClose={onClose} />,
@@ -159,20 +105,14 @@ describe("UserFormDrawer", () => {
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
+    const [[url, init]] = callsOf(fetchMock);
     expect(url).toBe("/api/users/u-analyst");
     expect(init.method).toBe("PATCH");
     expect(JSON.parse(init.body as string)).toEqual({ is_active: false });
   });
 
   test("own account: role and status are locked, password can change", async () => {
-    const fetchMock = vi.fn(() =>
-      Promise.resolve(jsonResponse({ data: { ...USER_JSON } })),
-    );
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubFetch(saved());
     const onClose = vi.fn();
     renderWithClient(
       <UserFormDrawer mode="edit" user={USER} isSelf open onClose={onClose} />,
@@ -191,10 +131,7 @@ describe("UserFormDrawer", () => {
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
-    const [, init] = fetchMock.mock.calls[0] as unknown as [
-      string,
-      RequestInit,
-    ];
+    const [[, init]] = callsOf(fetchMock);
     expect(JSON.parse(init.body as string)).toEqual({
       password: "a-new-long-password",
     });
@@ -202,8 +139,9 @@ describe("UserFormDrawer", () => {
 
   test("submit is disabled while the request is in flight", async () => {
     let resolve: (r: Response) => void = () => {};
-    const fetchMock = vi.fn(() => new Promise<Response>((r) => (resolve = r)));
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubFetch(
+      () => new Promise<Response>((r) => (resolve = r)),
+    );
     renderWithClient(<UserFormDrawer mode="create" open onClose={vi.fn()} />);
 
     await fillCreate();
@@ -211,16 +149,11 @@ describe("UserFormDrawer", () => {
     expect(submit).toBeDisabled();
     await userEvent.setup().click(submit);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    resolve(jsonResponse({ data: { ...USER_JSON } }, 201));
+    resolve(saved({}, 201));
   });
 
   test("409 USER_SELF_LOCKOUT shows a banner", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() =>
-        Promise.resolve(jsonResponse(errorBody("USER_SELF_LOCKOUT"), 409)),
-      ),
-    );
+    stubFetch(apiError("USER_SELF_LOCKOUT", 409));
     renderWithClient(
       <UserFormDrawer mode="edit" user={USER} open onClose={vi.fn()} />,
     );

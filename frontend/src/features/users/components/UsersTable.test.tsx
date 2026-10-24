@@ -2,26 +2,20 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 
+import { USER_JSON } from "@/test/fixtures";
+
 import { userSchema } from "../schemas";
 import { UsersTable } from "./UsersTable";
 
 const USERS_JSON = [
   {
+    ...USER_JSON,
     id: "u-super",
     username: "supervisor.demo",
     role: "supervisor",
-    is_active: true,
     created_at: "2026-09-15T04:30:00Z",
-    updated_at: "2026-09-15T04:30:00Z",
   },
-  {
-    id: "u-analyst",
-    username: "analyst.demo",
-    role: "analyst",
-    is_active: false,
-    created_at: "2026-09-15T04:31:00Z",
-    updated_at: "2026-09-15T04:31:00Z",
-  },
+  { ...USER_JSON, is_active: false },
 ];
 const users = USERS_JSON.map((u) => userSchema.parse(u));
 

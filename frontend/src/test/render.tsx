@@ -1,31 +1,40 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { render, type RenderResult } from "@testing-library/react";
-import type { ReactElement } from "react";
+import {
+  render,
+  renderHook,
+  type RenderHookResult,
+  type RenderResult,
+} from "@testing-library/react";
+import type { ReactElement, ReactNode } from "react";
 
 import type { Me } from "@/features/auth/schemas";
 import { makeQueryClient } from "@/lib/query-client";
 
-/** Render with a fresh QueryClient (no retries) per test. */
-export function renderWithClient(ui: ReactElement): RenderResult {
+function testClient() {
   const client = makeQueryClient();
   client.setDefaultOptions({
     queries: { retry: false },
     mutations: { retry: false },
   });
+  return client;
+}
+
+/** Render with a fresh QueryClient (no retries) per test. */
+export function renderWithClient(ui: ReactElement): RenderResult {
   return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+    <QueryClientProvider client={testClient()}>{ui}</QueryClientProvider>,
   );
 }
 
-export function jsonResponse(
-  body: unknown,
-  status = 200,
-  headers: Record<string, string> = {},
-) {
-  return new Response(body === null ? null : JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...headers },
-  });
+/** renderHook with a fresh QueryClient (no retries), for page hooks. */
+export function renderHookWithClient<T>(
+  hook: () => T,
+): RenderHookResult<T, unknown> {
+  const client = testClient();
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  );
+  return renderHook(hook, { wrapper });
 }
 
 export const ME: Record<Me["role"], Me> = {

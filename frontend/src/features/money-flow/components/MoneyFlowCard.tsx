@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from "react";
 import { useTheme } from "@/components/theme/use-theme";
 import { Segmented } from "@/components/ui/Segmented";
 import { StatePanel } from "@/components/ui/StatePanel";
-import { QueryError } from "@/components/ui/QueryError";
+import { QueryView } from "@/components/ui/QueryView";
 import { useCaseSelection } from "@/features/cases/hooks/useCaseSelection";
 import type { CasePageData } from "@/features/cases/hooks/useCasePage";
 
@@ -156,44 +156,49 @@ export function MoneyFlowCard({ data }: { data: CasePageData }) {
       <div
         className={`relative overflow-hidden rounded-xl bg-raised ${mode === "view" ? "h-[640px]" : "h-[500px]"}`}
       >
-        {data.graphQuery.isPending ? (
-          <StatePanel kind="loading" title="Loading graph" />
-        ) : data.graphQuery.isError ? (
-          <QueryError error={data.graphQuery.error} noun="Graph" />
-        ) : graphData && graphData.nodes.length === 0 ? (
-          <StatePanel kind="empty" title="No transactions in this window" />
-        ) : (
-          graphData && (
-            <>
-              <ReagraphView
-                key={layoutKey}
-                data={graphData}
-                mode={mode}
-                theme={theme}
-                selectedEdgeId={selection.selectedTransactionId}
-                onEdgeClick={selection.selectTransaction}
-              />
-              {selected && (
-                <EdgeDetailCard
-                  edge={selected.edge}
-                  inCase={selected.inCase}
-                  onClose={() => selection.selectTransaction(null)}
-                  onShowInTimeline={() =>
-                    document
-                      .getElementById(`tx-row-${selected.edge.transactionId}`)
-                      ?.scrollIntoView({ block: "center" })
-                  }
-                  onAskCopilot={() => selection.setRightOpen(true)}
+        <QueryView
+          query={data.graphQuery}
+          noun="Graph"
+          loading="Loading graph"
+          empty={{
+            // Empty after the node/edge filters, not only when the API returns nothing.
+            when: () => graphData?.nodes.length === 0,
+            title: "No transactions in this window",
+          }}
+        >
+          {() =>
+            graphData && (
+              <>
+                <ReagraphView
+                  key={layoutKey}
+                  data={graphData}
+                  mode={mode}
+                  theme={theme}
+                  selectedEdgeId={selection.selectedTransactionId}
+                  onEdgeClick={selection.selectTransaction}
                 />
-              )}
-              {mode === "look" && (
-                <p className="absolute bottom-3 left-3 text-[11px] text-muted">
-                  3D look · exact values in the timeline
-                </p>
-              )}
-            </>
-          )
-        )}
+                {selected && (
+                  <EdgeDetailCard
+                    edge={selected.edge}
+                    inCase={selected.inCase}
+                    onClose={() => selection.selectTransaction(null)}
+                    onShowInTimeline={() =>
+                      document
+                        .getElementById(`tx-row-${selected.edge.transactionId}`)
+                        ?.scrollIntoView({ block: "center" })
+                    }
+                    onAskCopilot={() => selection.setRightOpen(true)}
+                  />
+                )}
+                {mode === "look" && (
+                  <p className="absolute bottom-3 left-3 text-[11px] text-muted">
+                    3D look · exact values in the timeline
+                  </p>
+                )}
+              </>
+            )
+          }
+        </QueryView>
       </div>
       {mode === "view" && (
         <p className="text-[11px] text-muted">
