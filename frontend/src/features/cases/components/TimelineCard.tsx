@@ -4,7 +4,7 @@ import { CardHeader } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { cx } from "@/components/ui/cx";
 import { Pagination } from "@/components/ui/Pagination";
-import { StatusChip } from "@/features/transactions/components/StatusChip";
+import { TransactionStatusChip } from "@/features/transactions/components/TransactionStatusChip";
 import type { Transaction } from "@/features/transactions/schemas";
 import { formatMoney, formatTime } from "@/lib/format";
 import type { PageMeta } from "@/lib/schemas";
@@ -76,7 +76,7 @@ export function TimelineCard({
                   {formatTime(t.occurredAt)}
                 </td>
                 <td className="px-2.5 py-2">
-                  <StatusChip status={t.status} />
+                  <TransactionStatusChip status={t.status} />
                 </td>
                 <td className="rounded-r-lg px-2.5 py-2">
                   {t.evidenceId ? (

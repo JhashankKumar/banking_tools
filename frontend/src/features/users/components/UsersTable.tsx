@@ -1,12 +1,18 @@
-import { Lock } from "lucide-react";
+import { Ban, Check, Lock } from "lucide-react";
 
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { StatusChip, type StatusStyles } from "@/components/ui/StatusChip";
 import { Table, Td, Th } from "@/components/ui/Table";
 import { formatDateTime } from "@/lib/format";
 import { ROLE_LABEL } from "@/lib/permissions";
 
 import type { User } from "../schemas";
+
+const ACCOUNT_STYLES: StatusStyles<"active" | "inactive"> = {
+  active: { tone: "success", icon: Check, label: "Active" },
+  inactive: { tone: "neutral", icon: Ban, label: "Inactive" },
+};
 
 export function UsersTable({
   users,
@@ -47,9 +53,11 @@ export function UsersTable({
                 </Chip>
               </Td>
               <Td>
-                <Chip tone={u.isActive ? "success" : "neutral"} outline>
-                  {u.isActive ? "Active" : "Inactive"}
-                </Chip>
+                <StatusChip
+                  value={u.isActive ? "active" : "inactive"}
+                  styles={ACCOUNT_STYLES}
+                  outline
+                />
               </Td>
               <Td className="font-mono whitespace-nowrap text-muted">
                 {formatDateTime(u.createdAt)}

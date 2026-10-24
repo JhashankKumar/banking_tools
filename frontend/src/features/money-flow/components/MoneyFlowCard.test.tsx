@@ -1,26 +1,14 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import { CasePage } from "@/features/cases/components/CasePage";
-import {
-  ALERT_JSON,
-  CASE_JSON,
-  GRAPH_JSON,
-  MONEY_PATHS_JSON,
-  RULES_JSON,
-  TRANSACTIONS_JSON,
-  page,
-  routeFetch,
-} from "@/test/fixtures";
-import { jsonResponse, renderWithClient } from "@/test/render";
+import { GRAPH_JSON, caseRoutes } from "@/test/fixtures";
+import { callsOf, jsonResponse, stubFetch, type FetchMock } from "@/test/http";
+import { renderWithClient } from "@/test/render";
 
 vi.mock("reagraph", () => import("@/test/reagraph-mock"));
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-}));
-
-afterEach(() => vi.unstubAllGlobals());
+vi.mock("next/navigation", () => import("@/test/next-navigation"));
 
 const OUT_EDGE = {
   ...GRAPH_JSON.edges[1],
@@ -31,13 +19,9 @@ const OUT_EDGE = {
   in_case: false,
 };
 
-function stub() {
-  const fetchMock = vi.fn(
-    routeFetch({
-      "/api/cases/FR-10482/transactions": () =>
-        jsonResponse(page(TRANSACTIONS_JSON)),
-      "/api/cases/FR-10482/money-paths": () =>
-        jsonResponse({ data: MONEY_PATHS_JSON }),
+const stub = () =>
+  stubFetch(
+    caseRoutes({
       "/api/cases/FR-10482/graph": () =>
         jsonResponse({
           data: {
@@ -56,17 +40,10 @@ function stub() {
             edges: [...GRAPH_JSON.edges, OUT_EDGE],
           },
         }),
-      "/api/cases/FR-10482": () => jsonResponse({ data: CASE_JSON }),
-      "/api/alerts": () => jsonResponse(page([ALERT_JSON])),
-      "/api/rules": () => jsonResponse({ data: RULES_JSON }),
     }),
   );
-  vi.stubGlobal("fetch", fetchMock);
-  return fetchMock;
-}
 
-const urls = (m: ReturnType<typeof stub>) =>
-  m.mock.calls.map((c) => String(c[0]));
+const urls = (m: FetchMock) => callsOf(m).map(([url]) => url);
 const canvas = () => screen.findByTestId("reagraph");
 
 describe("MoneyFlowCard", () => {

@@ -1,12 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { useIsMutating } from "@tanstack/react-query";
 import { useState } from "react";
 import { Controller, useForm, type UseFormSetError } from "react-hook-form";
 
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Drawer } from "@/components/ui/Drawer";
 import { Field } from "@/components/ui/Field";
 import { Segmented } from "@/components/ui/Segmented";
@@ -153,24 +154,7 @@ function UserFormBody({ mode, user, isSelf = false, onClose }: Props) {
       noValidate
       className="flex flex-col gap-5"
     >
-      {failure && (
-        <div
-          role="alert"
-          className="flex gap-2.5 rounded-lg border border-error bg-error/10 px-3 py-2.5"
-        >
-          <AlertCircle aria-hidden size={16} className="mt-0.5 text-error" />
-          <div>
-            <p className="text-sm font-semibold text-error">
-              {failure.message}
-            </p>
-            {failure.requestId && (
-              <p className="text-xs text-muted">
-                Request ID {failure.requestId}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      <ErrorBanner error={failure} />
       <Field
         label="Username"
         mono

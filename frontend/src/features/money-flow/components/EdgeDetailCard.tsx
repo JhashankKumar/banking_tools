@@ -1,7 +1,7 @@
 import { Sparkles, X } from "lucide-react";
 
 import { Chip } from "@/components/ui/Chip";
-import { StatusChip } from "@/features/transactions/components/StatusChip";
+import { TransactionStatusChip } from "@/features/transactions/components/TransactionStatusChip";
 import { formatDateTime, formatMoney } from "@/lib/format";
 
 import type { FlowEdge } from "../schemas";
@@ -34,7 +34,7 @@ export function EdgeDetailCard({
         <span className="font-mono text-sm font-bold text-ink">
           {edge.transactionId}
         </span>
-        <StatusChip status={edge.status} />
+        <TransactionStatusChip status={edge.status} />
         {edge.kind === "reversal" && <Chip tone="reversal">reversal</Chip>}
         <button
           type="button"
