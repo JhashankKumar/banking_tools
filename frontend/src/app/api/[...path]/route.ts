@@ -67,6 +67,8 @@ async function forward(
   });
   const upstreamId = upstream.headers.get("x-request-id");
   if (upstreamId) out.set("X-Request-ID", upstreamId);
+  const retryAfter = upstream.headers.get("retry-after");
+  if (retryAfter) out.set("Retry-After", retryAfter);
   let body: ArrayBuffer | null;
   try {
     body = upstream.status === 204 ? null : await upstream.arrayBuffer();

@@ -110,6 +110,23 @@ describe("/api proxy", () => {
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 
+  test("passes Retry-After through so the browser can say when to try again", async () => {
+    stubFetch(
+      Response.json(
+        { error: { code: "COPILOT_LIMIT_REACHED" } },
+        { status: 429, headers: { "Retry-After": "300" } },
+      ),
+    );
+
+    const response = await GET(
+      req("cases/FR-10482/chats"),
+      ctx("cases", "FR-10482", "chats"),
+    );
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("300");
+  });
+
   test("rejects non-GET without Origin header", async () => {
     stubFetch();
 

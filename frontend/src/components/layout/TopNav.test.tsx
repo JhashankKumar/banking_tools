@@ -23,6 +23,18 @@ describe("TopNav", () => {
     expect(links).not.toContain("Cases");
   });
 
+  test("supervisor nav has Reviews; analyst nav does not", () => {
+    const { unmount } = renderWithClient(<TopNav me={ME.supervisor} />);
+    expect(screen.getByRole("link", { name: "Reviews" })).toHaveAttribute(
+      "href",
+      "/reviews",
+    );
+    unmount();
+
+    renderWithClient(<TopNav me={ME.analyst} />);
+    expect(screen.queryByRole("link", { name: "Reviews" })).toBeNull();
+  });
+
   test("shows Users for supervisor and hides Audit", () => {
     renderWithClient(<TopNav me={ME.supervisor} />);
 
