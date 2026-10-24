@@ -85,6 +85,8 @@ def load_facts(
             status=tx.status,
             reversed_by=tuple(reversals.get(tx.id, ())),
             reverses=tx.reversal_of_transaction_id,
+            rail=tx.rail,
+            reference=tx.reference,
         )
         for tx in session.scalars(query)
     ]

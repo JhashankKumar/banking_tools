@@ -45,6 +45,8 @@ def edge_fields(fact: TransactionFact, evidence_id: str | None) -> dict[str, Any
         "status": fact.status,
         "is_final": is_completed(fact),
         "reversed_by": list(fact.reversed_by),
+        "rail": fact.rail,
+        "reference": fact.reference,
         "evidence_id": evidence_id,
     }
 
