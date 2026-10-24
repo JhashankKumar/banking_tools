@@ -36,3 +36,9 @@ export function makeQueryClient(): QueryClient {
     },
   });
 }
+
+/** Options every query hook accepts, e.g. `useAlerts(params, { enabled: caseQuery.isSuccess })`. */
+export interface QueryOpts {
+  /** False waits (e.g. until the case loads) instead of requesting now. */
+  enabled?: boolean;
+}

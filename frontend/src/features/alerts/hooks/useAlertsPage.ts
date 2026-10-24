@@ -5,17 +5,18 @@ import { useMemo, useState } from "react";
 import { useCasesList } from "@/features/cases/queries";
 import type { CaseStatus } from "@/features/cases/schemas";
 import { useRules } from "@/features/rules/queries";
+import { useListFilters } from "@/lib/use-list-filters";
 
 import { useAlerts } from "../queries";
 
-const PAGE_SIZE = 50;
-
 export function useAlertsPage() {
-  const [ruleId, setRuleId] = useState<string | undefined>();
-  const [caseId, setCaseId] = useState<string | undefined>();
+  const list = useListFilters<{ ruleId?: string; caseId?: string }>({});
   const [search, setSearch] = useState("");
-  const [offset, setOffset] = useState(0);
-  const alerts = useAlerts({ limit: PAGE_SIZE, offset, ruleId, caseId });
+  const alerts = useAlerts({
+    limit: list.limit,
+    offset: list.offset,
+    ...list.filters,
+  });
   const cases = useCasesList({ limit: 100, offset: 0 });
   const rules = useRules();
 
@@ -50,23 +51,16 @@ export function useAlertsPage() {
   return {
     alerts,
     rows,
-    page: alerts.data?.page,
     kpis,
     caseStatus,
     cases: cases.data?.items ?? [],
     rules: rules.data ?? [],
-    ruleId,
-    caseId,
+    ruleId: list.filters.ruleId,
+    caseId: list.filters.caseId,
     search,
-    setRuleId: (v: string | undefined) => {
-      setRuleId(v);
-      setOffset(0);
-    },
-    setCaseId: (v: string | undefined) => {
-      setCaseId(v);
-      setOffset(0);
-    },
+    setRuleId: (v: string | undefined) => list.setFilter("ruleId", v),
+    setCaseId: (v: string | undefined) => list.setFilter("caseId", v),
     setSearch,
-    setOffset,
+    setOffset: list.setOffset,
   };
 }

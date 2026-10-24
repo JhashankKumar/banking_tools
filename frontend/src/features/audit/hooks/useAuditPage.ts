@@ -2,20 +2,23 @@
 
 import { useMemo, useState } from "react";
 
+import { useListFilters } from "@/lib/use-list-filters";
+
 import { useAuditEvents } from "../queries";
 import { KNOWN_ACTIONS, type Outcome } from "../schemas";
 
-const PAGE_SIZE = 50;
-
 export function useAuditPage() {
-  const [action, setAction] = useState<string | undefined>();
+  const list = useListFilters<{ action?: string }>({});
+  // Outcome and request-ID search filter the loaded page only; the API has no such params.
   const [outcome, setOutcome] = useState<Outcome | undefined>();
   const [search, setSearch] = useState("");
-  const [offset, setOffset] = useState(0);
-  const events = useAuditEvents({ limit: PAGE_SIZE, offset, action });
+  const events = useAuditEvents({
+    limit: list.limit,
+    offset: list.offset,
+    ...list.filters,
+  });
   const items = useMemo(() => events.data?.items ?? [], [events.data]);
 
-  // Outcome and request-ID search filter the loaded page only; the API has no such params.
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items.filter(
@@ -43,18 +46,14 @@ export function useAuditPage() {
   return {
     events,
     rows,
-    page: events.data?.page,
     kpis,
     actions,
-    action,
+    action: list.filters.action,
     outcome,
     search,
-    setAction: (v: string | undefined) => {
-      setAction(v);
-      setOffset(0);
-    },
+    setAction: (v: string | undefined) => list.setFilter("action", v),
     setOutcome,
     setSearch,
-    setOffset,
+    setOffset: list.setOffset,
   };
 }

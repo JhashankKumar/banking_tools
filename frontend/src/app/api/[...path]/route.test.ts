@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+
+import { callsOf, stubFetch } from "@/test/http";
 
 import { GET, POST } from "./route";
 
@@ -25,15 +27,10 @@ function req(
 }
 
 beforeEach(() => vi.stubEnv("OFI_API_URL", "http://api.test"));
-afterEach(() => {
-  vi.unstubAllGlobals();
-  vi.unstubAllEnvs();
-});
 
 describe("/api proxy", () => {
   test("api proxy forwards bearer token and query", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(Response.json({ data: [] }));
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubFetch(Response.json({ data: [] }));
 
     const response = await GET(
       req("alerts?case_id=FR-10482&limit=5"),
@@ -41,7 +38,7 @@ describe("/api proxy", () => {
     );
 
     expect(response.status).toBe(200);
-    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [[url, init]] = callsOf(fetchMock);
     expect(url).toBe("http://api.test/api/v1/alerts?case_id=FR-10482&limit=5");
     expect(new Headers(init.headers).get("Authorization")).toBe(
       "Bearer tok-123",
@@ -49,7 +46,7 @@ describe("/api proxy", () => {
   });
 
   test("api proxy returns 401 envelope without cookie", async () => {
-    vi.stubGlobal("fetch", vi.fn());
+    stubFetch();
 
     const response = await GET(req("alerts", { cookie: false }), ctx("alerts"));
 
@@ -62,10 +59,7 @@ describe("/api proxy", () => {
     const broken = new ReadableStream({
       start: (c) => c.error(new Error("connection reset")),
     });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response(broken, { status: 200 })),
-    );
+    stubFetch(new Response(broken, { status: 200 }));
 
     const response = await GET(req("alerts"), ctx("alerts"));
 
@@ -74,7 +68,7 @@ describe("/api proxy", () => {
   });
 
   test("rejects cross-origin non-GET", async () => {
-    vi.stubGlobal("fetch", vi.fn());
+    stubFetch();
 
     const response = await POST(
       req("users", {
@@ -92,7 +86,7 @@ describe("/api proxy", () => {
   test.each(["cross-site", "same-site", "none"])(
     "rejects GET with Sec-Fetch-Site %s before reaching the API",
     async (site) => {
-      vi.stubGlobal("fetch", vi.fn());
+      stubFetch();
 
       const response = await GET(
         req("cases/FR-10482", { headers: { "Sec-Fetch-Site": site } }),
@@ -105,10 +99,7 @@ describe("/api proxy", () => {
   );
 
   test("allows same-origin GET and marks the response nosniff", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(Response.json({ data: [] })),
-    );
+    stubFetch(Response.json({ data: [] }));
 
     const response = await GET(
       req("alerts", { headers: { "Sec-Fetch-Site": "same-origin" } }),
@@ -120,7 +111,7 @@ describe("/api proxy", () => {
   });
 
   test("rejects non-GET without Origin header", async () => {
-    vi.stubGlobal("fetch", vi.fn());
+    stubFetch();
 
     const response = await POST(
       req("users", { method: "POST", body: "{}", origin: null }),
@@ -133,7 +124,7 @@ describe("/api proxy", () => {
   test.each([[".."], ["users", "..", "health"], ["a%2Fb"], ["http:"]])(
     "api proxy rejects path traversal segments %j",
     async (...segments) => {
-      vi.stubGlobal("fetch", vi.fn());
+      stubFetch();
 
       const response = await GET(req("x"), ctx(...segments));
 
@@ -151,14 +142,11 @@ describe("/api proxy", () => {
         request_id: "r9",
       },
     };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        Response.json(body, {
-          status: 404,
-          headers: { "X-Request-ID": "r9" },
-        }),
-      ),
+    stubFetch(
+      Response.json(body, {
+        status: 404,
+        headers: { "X-Request-ID": "r9" },
+      }),
     );
 
     const response = await GET(req("cases/FR-99999"), ctx("cases", "FR-99999"));
@@ -169,10 +157,7 @@ describe("/api proxy", () => {
   });
 
   test("api proxy forwards JSON body on same-origin POST", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(Response.json({ data: {} }, { status: 201 }));
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = stubFetch(Response.json({ data: {} }, { status: 201 }));
 
     const response = await POST(
       req("users", {
@@ -184,7 +169,7 @@ describe("/api proxy", () => {
     );
 
     expect(response.status).toBe(201);
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [[, init]] = callsOf(fetchMock);
     expect(init.method).toBe("POST");
     expect(init.body).toBe(JSON.stringify({ username: "a.b" }));
   });

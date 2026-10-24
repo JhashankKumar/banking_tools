@@ -1,9 +1,7 @@
-import { afterEach, expect, test, vi } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import { ApiError } from "./api-error";
 import { makeQueryClient } from "./query-client";
-
-afterEach(() => vi.unstubAllGlobals());
 
 test("redirects to login on AUTH_NOT_AUTHENTICATED", async () => {
   const assign = vi.fn();
