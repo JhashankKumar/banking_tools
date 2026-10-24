@@ -1,9 +1,17 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import type { Case } from "../schemas";
 import { CaseStatusChip } from "./CaseStatusChip";
 
-export function CaseHeader({ data }: { data: Case }) {
+export function CaseHeader({
+  data,
+  action,
+}: {
+  data: Case;
+  /** Shown at the end of the title row, e.g. a supervisor's "Close case". */
+  action?: ReactNode;
+}) {
   return (
     <div className="flex flex-col gap-1 px-6 pt-5 pb-4">
       <p className="text-xs text-muted">
@@ -20,6 +28,7 @@ export function CaseHeader({ data }: { data: Case }) {
           </span>
         </h1>
         <CaseStatusChip status={data.status} />
+        {action && <div className="ml-auto">{action}</div>}
       </div>
     </div>
   );

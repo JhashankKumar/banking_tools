@@ -3,9 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  CHAT_SUMMARY_JSON,
   LIMITED_TO_DATASET,
   MONEY_PATHS_JSON,
   caseRoutes,
+  page,
 } from "@/test/fixtures";
 import { apiError, callsOf, jsonResponse, stubFetch } from "@/test/http";
 import { renderWithClient } from "@/test/render";
@@ -48,7 +50,7 @@ describe("CasePage", () => {
     expect(within(why).getByText("₹45,000.00")).toBeInTheDocument();
     expect(within(why).getByText(/not a finding of fraud/)).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /FR-10482/ }),
+      screen.getByRole("heading", { level: 1, name: /FR-10482/ }),
     ).toBeInTheDocument();
   });
 
@@ -144,9 +146,12 @@ describe("CasePage", () => {
       }),
     ).toBeInTheDocument();
     // Every extra call would be audited as another denied event.
-    expect(callsOf(fetchMock).map(([url]) => url)).toEqual([
-      "/api/cases/FR-10482",
-    ]);
+    // /api/auth/me (the viewer's role) is not case data and is cached app-wide in practice.
+    expect(
+      callsOf(fetchMock)
+        .map(([url]) => url)
+        .filter((url) => url !== "/api/auth/me"),
+    ).toEqual(["/api/cases/FR-10482"]);
   });
 
   test("collapsing left column leaves an accessible rail button", async () => {
@@ -169,12 +174,17 @@ describe("CasePage", () => {
     ).toBeInTheDocument();
   });
 
-  test("copilot panel shows its milestone 5 empty state", async () => {
-    stubCase();
+  test("copilot panel lists the case's chats", async () => {
+    stubCase({
+      "/api/cases/FR-10482/chats": () =>
+        jsonResponse(page([CHAT_SUMMARY_JSON])),
+    });
     renderWithClient(<CasePage caseId="FR-10482" />);
 
     const copilot = await screen.findByRole("region", { name: "AI copilot" });
-    expect(copilot).toHaveTextContent(/arrives in Milestone 5/);
-    expect(within(copilot).getByRole("textbox")).toBeDisabled();
+    expect(
+      await within(copilot).findByText("Where did the money go?"),
+    ).toBeVisible();
+    expect(within(copilot).getByText(/FR-10482 · 1 chat/)).toBeVisible();
   });
 });

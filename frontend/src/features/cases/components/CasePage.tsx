@@ -1,12 +1,21 @@
 "use client";
 
-import { Flag, Sparkles } from "lucide-react";
+import { Flag, Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
+import { Button } from "@/components/ui/Button";
 import { QueryView } from "@/components/ui/QueryView";
+import { useMe } from "@/features/auth/queries";
 import { CopilotPanel } from "@/features/copilot/components/CopilotPanel";
 import { MoneyFlowCard } from "@/features/money-flow/components/MoneyFlowCard";
 import { DATASET_LIMITATION } from "@/features/money-flow/schemas";
+import { CaseNotesCard } from "@/features/notes/components/CaseNotesCard";
+import { CloseCaseDrawer } from "@/features/notes/components/CloseCaseDrawer";
+import {
+  NoteEditorDrawer,
+  type NoteTarget,
+} from "@/features/notes/components/NoteEditorDrawer";
 
 import {
   CaseSelectionProvider,
@@ -22,6 +31,11 @@ import { WhyItFiredCard } from "./WhyItFiredCard";
 
 export function CasePage({ caseId }: { caseId: string }) {
   const data = useCasePage(caseId);
+  const me = useMe();
+  const [closing, setClosing] = useState(false);
+  // Convenience only: the API decides who may change a case's status.
+  const canTransition =
+    me.data?.permissions.includes("case:transition") ?? false;
   return (
     <QueryView
       query={data.caseQuery}
@@ -40,8 +54,28 @@ export function CasePage({ caseId }: { caseId: string }) {
         <CaseSelectionProvider
           pathCount={data.moneyPathsQuery.data?.paths.length ?? 0}
         >
-          <CaseHeader data={caseData} />
+          <CaseHeader
+            data={caseData}
+            action={
+              canTransition &&
+              caseData.status === "escalated" && (
+                <Button
+                  onClick={() => setClosing(true)}
+                  className="px-2.5 py-1 text-xs"
+                >
+                  <Lock aria-hidden size={13} />
+                  Close case
+                </Button>
+              )
+            }
+          />
           <CaseBody caseId={caseId} data={data} />
+          {closing && (
+            <CloseCaseDrawer
+              caseId={caseId}
+              onClose={() => setClosing(false)}
+            />
+          )}
         </CaseSelectionProvider>
       )}
     </QueryView>
@@ -49,6 +83,7 @@ export function CasePage({ caseId }: { caseId: string }) {
 }
 
 function CaseBody({ caseId, data }: { caseId: string; data: CasePageData }) {
+  const [draft, setDraft] = useState<NoteTarget | null>(null);
   const selection = useCaseSelection();
   const alerts = data.alertsQuery.data?.items ?? [];
   const transactions = data.transactionsQuery.data?.items ?? [];
@@ -113,6 +148,10 @@ function CaseBody({ caseId, data }: { caseId: string; data: CasePageData }) {
             />
           )}
         </QueryView>
+        <CaseNotesCard
+          caseId={caseId}
+          onSelectTransaction={selection.selectTransaction}
+        />
       </div>
       <CollapsibleColumn
         side="right"
@@ -122,8 +161,21 @@ function CaseBody({ caseId, data }: { caseId: string; data: CasePageData }) {
         onToggle={selection.setRightOpen}
         width="w-[360px]"
       >
-        <CopilotPanel caseId={caseId} />
+        <CopilotPanel
+          caseId={caseId}
+          onSelectTransaction={selection.selectTransaction}
+          onSaveAsNote={(sourceMessageId, answer) =>
+            setDraft({ kind: "draft", sourceMessageId, answer })
+          }
+        />
       </CollapsibleColumn>
+      {draft && (
+        <NoteEditorDrawer
+          caseId={caseId}
+          target={draft}
+          onClose={() => setDraft(null)}
+        />
+      )}
     </div>
   );
 }
