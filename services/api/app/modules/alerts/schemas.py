@@ -21,4 +21,5 @@ class AlertOut(BaseModel):
     triggered_at: datetime
     explanation: str
     metrics: dict[str, str]
+    evidence_id: str | None
     is_synthetic: bool

@@ -6,6 +6,7 @@ from app.core.errors import AppError
 from app.modules.alerts.schemas import AlertOut, RuleRef
 from app.modules.cases.models import Alert
 from app.modules.detection.registry import get_rule
+from app.modules.evidence.models import Evidence
 from app.modules.transactions.schemas import PartyRef
 
 
@@ -15,7 +16,7 @@ class AlertNotFoundError(AppError):
     message = "Alert not found"
 
 
-def _to_out(alert: Alert) -> AlertOut:
+def _to_out(alert: Alert, evidence_id: str | None) -> AlertOut:
     rule = get_rule(alert.rule_id)
     return AlertOut(
         id=alert.id,
@@ -31,8 +32,22 @@ def _to_out(alert: Alert) -> AlertOut:
         triggered_at=alert.triggered_at,
         explanation=alert.explanation,
         metrics=dict(alert.metrics),
+        evidence_id=evidence_id,
         is_synthetic=alert.is_synthetic,
     )
+
+
+def _evidence_ids(session: Session, alerts: list[Alert]) -> dict[str, str]:
+    """Case evidence ID per alert (alert evidence lives in the alert's case)."""
+    if not alerts:
+        return {}
+    rows = session.execute(
+        select(Evidence.source_record_id, Evidence.id).where(
+            Evidence.source_table == "alerts",
+            Evidence.source_record_id.in_([a.id for a in alerts]),
+        )
+    ).all()
+    return {record_id: evidence_id for record_id, evidence_id in rows}
 
 
 def list_alerts(
@@ -47,11 +62,12 @@ def list_alerts(
     alerts = session.scalars(
         query.order_by(Alert.triggered_at.desc(), Alert.id).limit(page.limit).offset(page.offset)
     ).all()
-    return [_to_out(a) for a in alerts], total
+    evidence = _evidence_ids(session, list(alerts))
+    return [_to_out(a, evidence.get(a.id)) for a in alerts], total
 
 
 def get_alert(session: Session, alert_id: str) -> AlertOut:
     alert = session.get(Alert, alert_id)
     if alert is None:
         raise AlertNotFoundError
-    return _to_out(alert)
+    return _to_out(alert, _evidence_ids(session, [alert]).get(alert.id))
