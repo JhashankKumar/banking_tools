@@ -3,12 +3,10 @@
 import { Flag, Sparkles } from "lucide-react";
 import Link from "next/link";
 
-import { QueryError } from "@/components/ui/QueryError";
-import { StatePanel } from "@/components/ui/StatePanel";
+import { QueryView } from "@/components/ui/QueryView";
 import { CopilotPanel } from "@/features/copilot/components/CopilotPanel";
 import { MoneyFlowCard } from "@/features/money-flow/components/MoneyFlowCard";
 import { DATASET_LIMITATION } from "@/features/money-flow/schemas";
-import { ApiError } from "@/lib/api-error";
 
 import {
   CaseSelectionProvider,
@@ -24,35 +22,29 @@ import { WhyItFiredCard } from "./WhyItFiredCard";
 
 export function CasePage({ caseId }: { caseId: string }) {
   const data = useCasePage(caseId);
-  const { caseQuery } = data;
-  if (caseQuery.isPending)
-    return <StatePanel kind="loading" title="Loading case" />;
-  if (caseQuery.isError) {
-    const error = caseQuery.error;
-    if (error instanceof ApiError && error.status === 404) {
-      return (
-        <StatePanel
-          kind="not-found"
-          title="Case not found"
-          message={`No case with ID ${caseId}.`}
-          requestId={error.requestId}
-          action={
-            <Link href="/cases" className="text-sm font-medium text-primary">
-              Back to cases
-            </Link>
-          }
-        />
-      );
-    }
-    return <QueryError error={error} noun="Case" />;
-  }
   return (
-    <CaseSelectionProvider
-      pathCount={data.moneyPathsQuery.data?.paths.length ?? 0}
+    <QueryView
+      query={data.caseQuery}
+      noun="Case"
+      loading="Loading case"
+      notFound={{
+        message: `No case with ID ${caseId}.`,
+        action: (
+          <Link href="/cases" className="text-sm font-medium text-primary">
+            Back to cases
+          </Link>
+        ),
+      }}
     >
-      <CaseHeader data={caseQuery.data} />
-      <CaseBody caseId={caseId} data={data} />
-    </CaseSelectionProvider>
+      {(caseData) => (
+        <CaseSelectionProvider
+          pathCount={data.moneyPathsQuery.data?.paths.length ?? 0}
+        >
+          <CaseHeader data={caseData} />
+          <CaseBody caseId={caseId} data={data} />
+        </CaseSelectionProvider>
+      )}
+    </QueryView>
   );
 }
 
@@ -106,22 +98,21 @@ function CaseBody({ caseId, data }: { caseId: string; data: CasePageData }) {
       </CollapsibleColumn>
       <div className="flex min-w-0 flex-1 flex-col gap-4">
         <MoneyFlowCard data={data} />
-        {data.transactionsQuery.isPending ? (
-          <StatePanel kind="loading" title="Loading transactions" />
-        ) : data.transactionsQuery.isError ? (
-          <QueryError
-            error={data.transactionsQuery.error}
-            noun="Transactions"
-          />
-        ) : (
-          <TimelineCard
-            transactions={transactions}
-            page={data.transactionsQuery.data.page}
-            selectedId={selection.selectedTransactionId}
-            onSelect={selection.selectTransaction}
-            onOffset={data.setTxOffset}
-          />
-        )}
+        <QueryView
+          query={data.transactionsQuery}
+          noun="Transactions"
+          loading="Loading transactions"
+        >
+          {(page) => (
+            <TimelineCard
+              transactions={page.items}
+              page={page.page}
+              selectedId={selection.selectedTransactionId}
+              onSelect={selection.selectTransaction}
+              onOffset={data.setTxOffset}
+            />
+          )}
+        </QueryView>
       </div>
       <CollapsibleColumn
         side="right"

@@ -1,28 +1,19 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import {
-  ALERT_JSON,
-  CASE_JSON,
-  GRAPH_JSON,
   LIMITED_TO_DATASET,
   MONEY_PATHS_JSON,
-  RULES_JSON,
-  TRANSACTIONS_JSON,
-  page,
-  routeFetch,
+  caseRoutes,
 } from "@/test/fixtures";
-import { jsonResponse, renderWithClient } from "@/test/render";
+import { apiError, callsOf, jsonResponse, stubFetch } from "@/test/http";
+import { renderWithClient } from "@/test/render";
 
 import { CasePage } from "./CasePage";
 
 vi.mock("reagraph", () => import("@/test/reagraph-mock"));
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-}));
-
-afterEach(() => vi.unstubAllGlobals());
+vi.mock("next/navigation", () => import("@/test/next-navigation"));
 
 const PATH_LIMITATION =
   "Includes a reversal record; the original transfer and its reversal are shown separately, not netted.";
@@ -37,20 +28,11 @@ function stubCase(overrides: Record<string, () => Response> = {}) {
       },
     ],
   };
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(
-      routeFetch({
-        "/api/cases/FR-10482/transactions": () =>
-          jsonResponse(page(TRANSACTIONS_JSON)),
-        "/api/cases/FR-10482/money-paths": () => jsonResponse({ data: paths }),
-        "/api/cases/FR-10482/graph": () => jsonResponse({ data: GRAPH_JSON }),
-        "/api/cases/FR-10482": () => jsonResponse({ data: CASE_JSON }),
-        "/api/alerts": () => jsonResponse(page([ALERT_JSON])),
-        "/api/rules": () => jsonResponse({ data: RULES_JSON }),
-        ...overrides,
-      }),
-    ),
+  return stubFetch(
+    caseRoutes({
+      "/api/cases/FR-10482/money-paths": () => jsonResponse({ data: paths }),
+      ...overrides,
+    }),
   );
 }
 
@@ -137,17 +119,7 @@ describe("CasePage", () => {
   test("shows case not found", async () => {
     stubCase({
       "/api/cases/FR-10482": () =>
-        jsonResponse(
-          {
-            error: {
-              code: "CASE_NOT_FOUND",
-              message: "Case not found",
-              details: [],
-              request_id: "r1",
-            },
-          },
-          404,
-        ),
+        apiError("CASE_NOT_FOUND", 404, { message: "Case not found" }),
     });
     renderWithClient(<CasePage caseId="FR-10482" />);
 
@@ -160,19 +132,9 @@ describe("CasePage", () => {
   });
 
   test("auditor sees permission denied on case page", async () => {
-    stubCase({
+    const fetchMock = stubCase({
       "/api/cases/FR-10482": () =>
-        jsonResponse(
-          {
-            error: {
-              code: "AUTH_FORBIDDEN",
-              message: "Forbidden",
-              details: [],
-              request_id: "r2",
-            },
-          },
-          403,
-        ),
+        apiError("AUTH_FORBIDDEN", 403, { message: "Forbidden" }),
     });
     renderWithClient(<CasePage caseId="FR-10482" />);
 
@@ -182,8 +144,9 @@ describe("CasePage", () => {
       }),
     ).toBeInTheDocument();
     // Every extra call would be audited as another denied event.
-    const urls = vi.mocked(fetch).mock.calls.map(([u]) => String(u));
-    expect(urls).toEqual(["/api/cases/FR-10482"]);
+    expect(callsOf(fetchMock).map(([url]) => url)).toEqual([
+      "/api/cases/FR-10482",
+    ]);
   });
 
   test("collapsing left column leaves an accessible rail button", async () => {

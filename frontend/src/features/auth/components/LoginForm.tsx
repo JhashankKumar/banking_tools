@@ -2,12 +2,13 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Eye, EyeOff, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Lock, User } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/Button";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { Field } from "@/components/ui/Field";
 import { asApiError, type ApiError } from "@/lib/api-error";
 import { landingFor } from "@/lib/permissions";
@@ -65,24 +66,7 @@ export function LoginForm() {
           Use your OpenFraud Investigator account.
         </p>
       </div>
-      {failure && (
-        <div
-          role="alert"
-          className="flex gap-2.5 rounded-lg border border-error bg-error/10 px-3 py-2.5"
-        >
-          <AlertCircle aria-hidden size={16} className="mt-0.5 text-error" />
-          <div>
-            <p className="text-sm font-semibold text-error">
-              {failure.message}
-            </p>
-            {failure.requestId && (
-              <p className="text-xs text-muted">
-                Request ID {failure.requestId} · this attempt was recorded.
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+      <ErrorBanner error={failure} note="this attempt was recorded." />
       <Field
         label="Username"
         autoComplete="username"

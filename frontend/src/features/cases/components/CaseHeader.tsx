@@ -1,8 +1,7 @@
 import Link from "next/link";
 
-import { Chip } from "@/components/ui/Chip";
-
-import { CASE_STATUS_LABEL, type Case } from "../schemas";
+import type { Case } from "../schemas";
+import { CaseStatusChip } from "./CaseStatusChip";
 
 export function CaseHeader({ data }: { data: Case }) {
   return (
@@ -20,9 +19,7 @@ export function CaseHeader({ data }: { data: Case }) {
             {data.title}
           </span>
         </h1>
-        <Chip tone="primary" outline>
-          ● {CASE_STATUS_LABEL[data.status]}
-        </Chip>
+        <CaseStatusChip status={data.status} />
       </div>
     </div>
   );
