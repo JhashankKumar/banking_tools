@@ -6,9 +6,7 @@ import { CASE_SUMMARY_JSON } from "@/test/fixtures";
 import { caseSummarySchema } from "../schemas";
 import { CasesTable } from "./CasesTable";
 
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-}));
+vi.mock("next/navigation", () => import("@/test/next-navigation"));
 
 test("CasesTable renders counts and links", () => {
   render(<CasesTable cases={[caseSummarySchema.parse(CASE_SUMMARY_JSON)]} />);

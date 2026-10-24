@@ -1,25 +1,12 @@
-"use client";
-
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-
-import { Chip } from "@/components/ui/Chip";
-import { Table, Td, Th } from "@/components/ui/Table";
+import { LinkRow, Table, Td, Th } from "@/components/ui/Table";
 import { formatDateTime } from "@/lib/format";
 
-import { CASE_STATUS_LABEL, type CaseSummary } from "../schemas";
+import type { CaseSummary } from "../schemas";
+import { CaseStatusChip } from "./CaseStatusChip";
 
 export function CasesTable({ cases }: { cases: CaseSummary[] }) {
-  const router = useRouter();
-  if (cases.length === 0) {
-    return (
-      <p className="rounded-xl border border-line bg-surface p-8 text-center text-sm text-muted">
-        No cases yet.
-      </p>
-    );
-  }
   return (
-    <Table>
+    <Table empty={cases.length === 0 && "No cases yet."}>
       <thead>
         <tr>
           <Th>Case</Th>
@@ -32,33 +19,20 @@ export function CasesTable({ cases }: { cases: CaseSummary[] }) {
       </thead>
       <tbody>
         {cases.map((c) => (
-          <tr
-            key={c.id}
-            aria-label={c.id}
-            onClick={() => router.push(`/cases/${c.id}`)}
-            className="cursor-pointer hover:bg-raised"
-          >
+          <LinkRow key={c.id} href={`/cases/${c.id}`} label={c.id}>
             <Td className="font-mono font-semibold">
-              <Link
-                href={`/cases/${c.id}`}
-                onClick={(e) => e.stopPropagation()}
-                className="hover:underline"
-              >
-                {c.id}
-              </Link>
+              <LinkRow.Link>{c.id}</LinkRow.Link>
             </Td>
             <Td>{c.title}</Td>
             <Td>
-              <Chip tone="primary" outline>
-                {CASE_STATUS_LABEL[c.status]}
-              </Chip>
+              <CaseStatusChip status={c.status} />
             </Td>
             <Td className="font-mono whitespace-nowrap">
               {formatDateTime(c.openedAt)}
             </Td>
             <Td className="text-right font-mono">{c.alertCount}</Td>
             <Td className="text-right font-mono">{c.transactionCount}</Td>
-          </tr>
+          </LinkRow>
         ))}
       </tbody>
     </Table>
