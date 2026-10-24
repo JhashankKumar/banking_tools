@@ -1,17 +1,9 @@
-import { QueryClientProvider } from "@tanstack/react-query";
-import {
-  act,
-  render,
-  renderHook,
-  screen,
-  waitFor,
-} from "@testing-library/react";
-import type { ReactNode } from "react";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, test } from "vitest";
 
-import { makeQueryClient } from "@/lib/query-client";
-import { jsonResponse } from "@/test/render";
 import { page } from "@/test/fixtures";
+import { callsOf, jsonResponse, stubFetch } from "@/test/http";
+import { renderHookWithClient } from "@/test/render";
 
 import { useAuditPage } from "../hooks/useAuditPage";
 import { auditEventSchema } from "../schemas";
@@ -64,8 +56,6 @@ const EVENTS_JSON = [
 ];
 const events = EVENTS_JSON.map((e) => auditEventSchema.parse(e));
 
-afterEach(() => vi.unstubAllGlobals());
-
 describe("AuditTable", () => {
   test("AuditTable shows actor username, system for detection.run, unknown for failed login", () => {
     render(<AuditTable events={events} />);
@@ -110,49 +100,36 @@ describe("AuditTable", () => {
 });
 
 describe("useAuditPage", () => {
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={makeQueryClient()}>
-      {children}
-    </QueryClientProvider>
-  );
+  const stubEvents = () => stubFetch(jsonResponse(page(EVENTS_JSON)));
 
   test("outcome filter is client-side", async () => {
-    const fetchMock = vi.fn(() =>
-      Promise.resolve(jsonResponse(page(EVENTS_JSON))),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    const { result } = renderHook(() => useAuditPage(), { wrapper });
+    const fetchMock = stubEvents();
+    const { result } = renderHookWithClient(() => useAuditPage());
     await waitFor(() => expect(result.current.rows).toHaveLength(4));
 
     act(() => result.current.setOutcome("denied"));
 
     expect(result.current.rows.map((e) => e.id)).toEqual([4]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0])).not.toContain("outcome");
+    expect(callsOf(fetchMock)[0][0]).not.toContain("outcome");
   });
 
   test("action filter is sent to the server", async () => {
-    const fetchMock = vi.fn(() =>
-      Promise.resolve(jsonResponse(page(EVENTS_JSON))),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    const { result } = renderHook(() => useAuditPage(), { wrapper });
+    const fetchMock = stubEvents();
+    const { result } = renderHookWithClient(() => useAuditPage());
     await waitFor(() => expect(result.current.rows).toHaveLength(4));
 
     act(() => result.current.setAction("auth.login.failed"));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(String(fetchMock.mock.calls[1])).toContain(
+    expect(callsOf(fetchMock)[1][0]).toBe(
       "/api/audit-logs?limit=50&offset=0&action=auth.login.failed",
     );
   });
 
   test("KPIs count the loaded page", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() => Promise.resolve(jsonResponse(page(EVENTS_JSON)))),
-    );
-    const { result } = renderHook(() => useAuditPage(), { wrapper });
+    stubEvents();
+    const { result } = renderHookWithClient(() => useAuditPage());
 
     await waitFor(() =>
       expect(result.current.kpis).toEqual({

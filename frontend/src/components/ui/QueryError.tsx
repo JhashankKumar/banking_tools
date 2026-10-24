@@ -1,9 +1,24 @@
+import type { ReactNode } from "react";
+
 import { ApiError, userMessage } from "@/lib/api-error";
 
 import { StatePanel } from "./StatePanel";
 
 /** Maps a failed query to the right state panel (403 → permission denied, 404 → not found). */
-export function QueryError({ error, noun }: { error: unknown; noun: string }) {
+export interface NotFoundOptions {
+  message?: string;
+  action?: ReactNode;
+}
+
+export function QueryError({
+  error,
+  noun,
+  notFound,
+}: {
+  error: unknown;
+  noun: string;
+  notFound?: NotFoundOptions;
+}) {
   const requestId = error instanceof ApiError ? error.requestId : null;
   if (error instanceof ApiError && error.status === 403) {
     return (
@@ -20,8 +35,9 @@ export function QueryError({ error, noun }: { error: unknown; noun: string }) {
       <StatePanel
         kind="not-found"
         title={`${noun} not found`}
-        message={error.message}
+        message={notFound?.message ?? error.message}
         requestId={requestId}
+        action={notFound?.action}
       />
     );
   }

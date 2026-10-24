@@ -1,11 +1,8 @@
-"use client";
-
 import { Flag } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { Chip } from "@/components/ui/Chip";
-import { Table, Td, Th } from "@/components/ui/Table";
+import { LinkRow, Table, Td, Th } from "@/components/ui/Table";
 import { CASE_STATUS_LABEL, type CaseStatus } from "@/features/cases/schemas";
 import { formatDateTime } from "@/lib/format";
 
@@ -18,16 +15,8 @@ export function AlertsTable({
   alerts: Alert[];
   caseStatus: Record<string, CaseStatus>;
 }) {
-  const router = useRouter();
-  if (alerts.length === 0) {
-    return (
-      <p className="rounded-xl border border-line bg-surface p-8 text-center text-sm text-muted">
-        No alerts match these filters.
-      </p>
-    );
-  }
   return (
-    <Table>
+    <Table empty={alerts.length === 0 && "No alerts match these filters."}>
       <thead>
         <tr>
           <Th>Alert</Th>
@@ -40,29 +29,13 @@ export function AlertsTable({
       </thead>
       <tbody>
         {alerts.map((a) => {
-          const href = a.caseId ? `/cases/${a.caseId}` : null;
           const status = a.caseId ? caseStatus[a.caseId] : undefined;
-          return (
-            <tr
-              key={a.id}
-              aria-label={a.id}
-              onClick={() => href && router.push(href)}
-              className={href ? "cursor-pointer hover:bg-raised" : undefined}
-            >
+          const cells = (id: ReactNode) => (
+            <>
               <Td>
                 <span className="flex items-center gap-2 font-mono whitespace-nowrap text-review">
                   <Flag aria-hidden size={14} />
-                  {href ? (
-                    <Link
-                      href={href}
-                      onClick={(e) => e.stopPropagation()}
-                      className="hover:underline"
-                    >
-                      {a.id}
-                    </Link>
-                  ) : (
-                    a.id
-                  )}
+                  {id}
                 </span>
               </Td>
               <Td>
@@ -84,6 +57,16 @@ export function AlertsTable({
                 )}
               </Td>
               <Td className="text-muted">{a.explanation}</Td>
+            </>
+          );
+          // Alerts without a case have nowhere to open, so their rows are not links.
+          return a.caseId ? (
+            <LinkRow key={a.id} href={`/cases/${a.caseId}`} label={a.id}>
+              {cells(<LinkRow.Link>{a.id}</LinkRow.Link>)}
+            </LinkRow>
+          ) : (
+            <tr key={a.id} aria-label={a.id}>
+              {cells(a.id)}
             </tr>
           );
         })}

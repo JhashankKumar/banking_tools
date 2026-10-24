@@ -1,27 +1,22 @@
 import { Check, Lock, X } from "lucide-react";
 
-import { Chip, type Tone } from "@/components/ui/Chip";
+import { StatusChip, type StatusStyles } from "@/components/ui/StatusChip";
 import { Table, Td, Th } from "@/components/ui/Table";
 import { formatDateTime } from "@/lib/format";
 
 import { actorLabel, type AuditEvent, type Outcome } from "../schemas";
 
-const OUTCOME_STYLE: Record<Outcome, { tone: Tone; icon: typeof Check }> = {
+const OUTCOME_STYLES: StatusStyles<Outcome> = {
   success: { tone: "success", icon: Check },
   denied: { tone: "error", icon: Lock },
   failure: { tone: "review", icon: X },
 };
 
 export function AuditTable({ events }: { events: AuditEvent[] }) {
-  if (events.length === 0) {
-    return (
-      <p className="rounded-xl border border-line bg-surface p-8 text-center text-sm text-muted">
-        No audit events match these filters.
-      </p>
-    );
-  }
   return (
-    <Table>
+    <Table
+      empty={events.length === 0 && "No audit events match these filters."}
+    >
       <thead>
         <tr>
           <Th>Time (IST)</Th>
@@ -34,7 +29,6 @@ export function AuditTable({ events }: { events: AuditEvent[] }) {
       </thead>
       <tbody>
         {events.map((e) => {
-          const { tone, icon: Icon } = OUTCOME_STYLE[e.outcome];
           const actor = actorLabel(e);
           return (
             <tr key={e.id} aria-label={`Event ${e.id}`}>
@@ -56,13 +50,11 @@ export function AuditTable({ events }: { events: AuditEvent[] }) {
               </Td>
               <Td>
                 <span data-outcome={e.outcome}>
-                  <Chip
-                    tone={tone}
+                  <StatusChip
+                    value={e.outcome}
+                    styles={OUTCOME_STYLES}
                     outline
-                    icon={<Icon aria-hidden size={12} />}
-                  >
-                    {e.outcome}
-                  </Chip>
+                  />
                 </span>
               </Td>
               <Td className="font-mono text-muted">{e.requestId ?? "—"}</Td>
