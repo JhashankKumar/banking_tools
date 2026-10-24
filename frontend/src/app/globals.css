@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/* Theme tokens (docs/specs/2026-10-24-milestone-4-ui-design.md). Components use the
+   utility names below, never raw hex values. */
+:root,
+:root[data-theme="light"] {
+  --bg-page: #f6f8fb;
+  --bg-surface: #ffffff;
+  --bg-surface-raised: #eef2f7;
+  --border: #d9e0ea;
+  --text: #0f1b2d;
+  --text-muted: #52607a;
+  --text-on-primary: #ffffff;
+  --primary: #1d4ed8;
+  --selected: #0f766e;
+  --review: #b45309;
+  --review-soft: #fef3c7;
+  --reversal: #6d28d9;
+  --counterparty: #5f6b7e;
+  --error: #b91c1c;
+  --success: #15803d;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg-page: #0b1220;
+  --bg-surface: #111a2e;
+  --bg-surface-raised: #17223a;
+  --border: #26344f;
+  --text: #e6ecf5;
+  --text-muted: #93a1b8;
+  --text-on-primary: #0b1220;
+  --primary: #60a5fa;
+  --selected: #2dd4bf;
+  --review: #fbbf24;
+  --review-soft: #3a2a0a;
+  --reversal: #a78bfa;
+  --counterparty: #94a3b8;
+  --error: #f87171;
+  --success: #4ade80;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-page: var(--bg-page);
+  --color-surface: var(--bg-surface);
+  --color-raised: var(--bg-surface-raised);
+  --color-line: var(--border);
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-on-primary: var(--text-on-primary);
+  --color-primary: var(--primary);
+  --color-selected: var(--selected);
+  --color-review: var(--review);
+  --color-review-soft: var(--review-soft);
+  --color-reversal: var(--reversal);
+  --color-counterparty: var(--counterparty);
+  --color-error: var(--error);
+  --color-success: var(--success);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+body {
+  background: var(--bg-page);
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Login brand panel gradient (deep trust blue). */
+.brand-panel {
+  background: linear-gradient(135deg, #1d4ed8 0%, #0f2672 100%);
+}
+:root[data-theme="dark"] .brand-panel {
+  background: linear-gradient(135deg, #0d1a38 0%, #050d1c 100%);
+}
