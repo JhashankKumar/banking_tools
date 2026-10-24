@@ -3,14 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
 
 import { ALERT_JSON } from "@/test/fixtures";
+import { router } from "@/test/next-navigation";
 
 import { alertSchema } from "../schemas";
 import { AlertsTable } from "./AlertsTable";
 
-const push = vi.fn();
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, replace: vi.fn() }),
-}));
+vi.mock("next/navigation", () => import("@/test/next-navigation"));
 
 const alert = alertSchema.parse(ALERT_JSON);
 
@@ -35,7 +33,7 @@ describe("AlertsTable", () => {
       .setup()
       .click(screen.getByRole("row", { name: /AL-ROT-TX-1002/ }));
 
-    expect(push).toHaveBeenCalledWith("/cases/FR-10482");
+    expect(router.push).toHaveBeenCalledWith("/cases/FR-10482");
   });
 
   test("alert ID links to its case for keyboard users", () => {
