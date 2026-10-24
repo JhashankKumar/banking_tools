@@ -5,7 +5,7 @@
 *.pem
 *.key
 
-# ---- Python (services/api, data, evals, scripts) ----
+# ---- Python (backend) ----
 __pycache__/
 *.py[cod]
 *$py.class
@@ -24,7 +24,7 @@ dist/
 htmlcov/
 coverage.xml
 
-# ---- Node / Next.js (apps/web, packages) ----
+# ---- Node / Next.js (frontend) ----
 node_modules/
 .pnpm-store/
 .next/

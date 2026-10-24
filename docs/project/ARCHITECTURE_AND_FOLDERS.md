@@ -5,102 +5,66 @@ Start with a **modular monolith**: one API deployment with clearly separated dom
 
 ## Repository layout
 
+One frontend and one backend, so each sits directly at the repository root (no `apps/` or `services/` wrapper; decided in ADR 0001 #21). Items marked *planned* do not exist yet.
+
 ```text
 openfraud-investigator/
-├── apps/
-│   └── web/
-│       ├── src/
-│       │   ├── app/                     # Next.js routes and layouts
-│       │   ├── features/
-│       │   │   ├── dashboard/
-│       │   │   ├── alerts/
-│       │   │   ├── cases/
-│       │   │   ├── transactions/
-│       │   │   ├── money-flow/
-│       │   │   ├── investigation/
-│       │   │   └── audit/
-│       │   ├── components/
-│       │   │   ├── ui/                  # Generic primitives only
-│       │   │   └── layout/
-│       │   ├── lib/
-│       │   │   ├── api-client.ts
-│       │   │   ├── query-client.ts
-│       │   │   └── config.ts
-│       │   ├── hooks/
-│       │   ├── types/                   # Shared UI-only types
-│       │   └── test/
-│       ├── public/
-│       ├── package.json
-│       └── ...
-├── services/
-│   └── api/
-│       ├── app/
-│       │   ├── main.py                  # App creation and startup
-│       │   ├── core/
-│       │   │   ├── config.py
-│       │   │   ├── logging.py
-│       │   │   ├── errors.py
-│       │   │   └── security.py
-│       │   ├── api/
-│       │   │   ├── router.py
-│       │   │   └── dependencies.py
-│       │   ├── db/
-│       │   │   ├── session.py
-│       │   │   └── base.py
-│       │   ├── modules/
-│       │   │   ├── alerts/
-│       │   │   │   ├── router.py
-│       │   │   │   ├── schemas.py
-│       │   │   │   ├── models.py
-│       │   │   │   ├── repository.py
-│       │   │   │   ├── service.py
-│       │   │   │   └── tests/
-│       │   │   ├── cases/
-│       │   │   ├── transactions/
-│       │   │   ├── evidence/
-│       │   │   ├── graph/
-│       │   │   ├── detection/
-│       │   │   ├── investigation/
-│       │   │   ├── agent/
-│       │   │   └── audit/
-│       │   └── tests/
-│       ├── migrations/                  # Alembic
-│       ├── pyproject.toml
-│       └── ...
-├── packages/
-│   └── api-contracts/                   # Optional generated OpenAPI client/types
-├── data/
-│   ├── generator/
-│   ├── scenarios/
-│   └── README.md                        # Dataset provenance and synthetic-only notice
-├── evals/
-│   ├── scenarios/
-│   ├── test_detection.py
-│   ├── test_graph_discovery.py
-│   ├── test_grounding.py
-│   ├── test_prompt_injection.py
-│   └── test_authorization.py
+├── frontend/                         # Next.js 16 (App Router), React 19, TypeScript, Tailwind 4, Vitest
+│   ├── src/
+│   │   ├── app/                      # routes and layouts only; pages compose features
+│   │   │   ├── (app)/                # signed-in area: alerts, cases, cases/[caseId], audit, users
+│   │   │   ├── login/
+│   │   │   ├── auth/                 # POST /auth/login, /auth/logout (sets the httpOnly session cookie)
+│   │   │   └── api/[...path]/        # API proxy: adds the token and forwards to the backend (BFF pattern)
+│   │   ├── features/<name>/          # one folder per domain area, always the same shape:
+│   │   │   ├── schemas.ts            #   Zod schemas + camelCase types (the wire boundary)
+│   │   │   ├── api.ts                #   every HTTP call for the feature, via lib/api-client
+│   │   │   ├── queries.ts            #   TanStack Query keys and hooks only
+│   │   │   ├── hooks/                #   page hooks (useXPage) and feature context
+│   │   │   ├── components/           #   feature components, tests next to them
+│   │   │   └── <logic>/              #   pure logic when it grows (e.g. money-flow/graph/)
+│   │   │   features: alerts, audit, auth, cases, copilot, money-flow, rules, transactions, users
+│   │   ├── components/
+│   │   │   ├── ui/                   # generic primitives (Button, Chip, Table, StatePanel, QueryError, KpiTiles…)
+│   │   │   ├── layout/               # app shell: AppShell, TopNav, UserMenu, ThemeSwitch, PageHeader
+│   │   │   └── theme/
+│   │   ├── lib/                      # api-client, api-error, query-client, format, permissions, config
+│   │   ├── server/                   # server-only helpers for route handlers (session cookie, API URL)
+│   │   ├── test/                     # render helpers, API-shaped fixtures, mocks
+│   │   └── proxy.ts                  # redirects signed-out page requests to /login
+│   ├── public/
+│   └── package.json, next.config.ts, vitest.config.mts, eslint.config.mjs
+├── backend/                          # FastAPI, Pydantic v2, SQLAlchemy 2, Alembic, uv
+│   ├── app/
+│   │   ├── main.py                   # create_app(): routers, error handlers, middleware
+│   │   ├── core/                     # config, security, permissions, errors, logging, request_id
+│   │   ├── api/                      # root router, dependencies, pagination, response envelopes
+│   │   ├── db/                       # Base, engine/session, model registry, column types
+│   │   ├── modules/<name>/           # router.py · schemas.py · service.py · models.py (only the files it needs)
+│   │   │   modules: alerts, audit, auth, cases, detection (rules/), evidence, graph, parties,
+│   │   │            transactions, users; agent/ planned for Milestone 5
+│   │   └── seed/                     # synthetic casebook loader (python -m app.seed)
+│   ├── migrations/                   # Alembic
+│   ├── tests/
+│   │   ├── api/                      # HTTP-level tests through the app (auth, permissions, envelopes)
+│   │   ├── db/                       # schema, migrations, seed, session/timezone behaviour
+│   │   ├── unit/                     # pure logic: detection rules, graph paths, config
+│   │   ├── conftest.py               # test database and client fixtures
+│   │   └── factories.py
+│   └── pyproject.toml, uv.lock, alembic.ini
 ├── docs/
-│   ├── architecture.md
-│   ├── problem-validation.md
-│   ├── threat-model.md
-│   ├── benchmark-results.md
-│   └── decisions/
-│       └── 0001-initial-project-decisions.md
-├── scripts/
-│   ├── seed_demo_data.py
-│   └── verify_environment.py
-├── docker-compose.yml
-├── .env.example
-├── .gitignore
-├── LICENSE
-├── README.md
-├── CONTRIBUTING.md
-├── CODE_OF_CONDUCT.md
-└── SECURITY.md
+│   ├── project/                      # brief, architecture, conventions, plan, testing, security
+│   ├── banking-domain/               # domain context and the synthetic casebook
+│   ├── decisions/                    # ADRs
+│   └── specs/                        # committed design specs (e.g. the Milestone 4 UI spec)
+├── evals/                            # planned (Milestone 7): benchmark scenarios and scorers
+├── docker/postgres/init/             # creates the test database on first start
+├── .github/workflows/ci.yml          # backend and frontend checks
+├── docker-compose.yml, .env.example
+└── README.md, CONTRIBUTING.md, SECURITY.md, CODE_OF_CONDUCT.md, LICENSE
 ```
 
-This is a target layout, not a requirement to create every file on day one. Begin with the folders needed for the current milestone and expand incrementally.
+Endpoints that are scoped to a case (`/cases/{id}/transactions`, `/graph`, `/money-paths`) live in `cases/router.py`; the `graph`, `transactions`, `evidence` and `parties` modules therefore have no router of their own.
 
 ## Backend request flow
 1. Router parses HTTP request and resolves the authenticated principal.
@@ -108,7 +72,7 @@ This is a target layout, not a requirement to create every file on day one. Begi
 3. Authorization policy checks access to the requested case/accounts.
 4. Application service runs the use case.
 5. Domain service performs graph traversal, rules, or investigation orchestration.
-6. Repository loads required records from PostgreSQL.
+6. The service queries PostgreSQL through the request's session (there is no separate repository layer).
 7. Response schema serializes the result.
 8. Audit service records the relevant action.
 9. Frontend renders the typed response.
