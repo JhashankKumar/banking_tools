@@ -107,7 +107,7 @@ Never send money as a JSON number. Never add amounts in different currencies.
 
 ---
 
-## 2. Backend structure (`services/api`)
+## 2. Backend structure (`backend`)
 
 ### 2.1 Layers and what each may do
 
@@ -205,14 +205,14 @@ Starlette `HTTPException` (404 for unknown routes, 405) is mapped to the same en
 
 ---
 
-## 3. Frontend structure (`apps/web`)
+## 3. Frontend structure (`frontend`)
 
 ### 3.1 Folders
 
 ```text
 src/
 ├── app/                           Next.js routes: thin; compose feature components
-│   └── (investigator)/cases/[caseId]/page.tsx
+│   └── (app)/cases/[caseId]/page.tsx
 ├── features/<feature>/            e.g. cases, transactions, money-flow, audit, auth
 │   ├── api.ts                     endpoint functions: call apiClient, parse with schemas
 │   ├── schemas.ts                 Zod schemas for this feature's API responses/requests
@@ -237,13 +237,14 @@ Features import from `lib/` and `components/`; features do not import each other
 
 `lib/api-client.ts` is the single place that talks HTTP:
 
-- Built on `fetch`; base URL `/bff` (`lib/config.ts`). Paths are API paths without `/api/v1`, e.g. `apiClient.get("/cases", …)` → `/bff/cases` → `${OFI_API_URL}/api/v1/cases`.
+- Built on `fetch`; base URL `/api` (`lib/config.ts`). Paths are API paths without `/api/v1`, e.g. `apiClient.get("/cases", …)` → `/api/cases` → `${OFI_API_URL}/api/v1/cases`.
 - Every request has a timeout (`AbortSignal.timeout`) and forwards the caller's `signal` (TanStack Query passes one), so navigating away cancels requests.
 - Unwraps the envelope: returns `data` (and `page` for lists).
-- Turns every non-2xx response into `ApiError` (a real `class ApiError extends Error` with `status`, `code`, `message`, `details`, `requestId`). Network failures and timeouts become `ApiError` with code `NETWORK_ERROR`.
+- Turns every non-2xx response into `ApiError` (a real `class ApiError extends Error` with `status`, `code`, `message`, `details`, `requestId`). Network failures become `ApiError` with code `NETWORK_ERROR`, timeouts with `TIMEOUT`; a response that fails its schema becomes `UNEXPECTED_RESPONSE`.
 - Never logs response bodies.
+- Two clients share that one implementation: `apiClient` (base `/api`, backend data) and `authClient` (base `/auth`, sign-in and sign-out). Nothing else in the browser calls `fetch`, so feature `api.ts` files contain no error handling: they return parsed data or throw `ApiError`.
 
-`lib/api-error.ts` exports `userMessage(error, fallback)`: shows the server `message` for known `ApiError` codes, the fallback for anything else.
+`lib/api-error.ts` exports `userMessage(error, fallback)`: shows the server `message` for known `ApiError` codes, the fallback for anything else. Components that catch (forms mapping errors to fields) use `asApiError(error)`: an `ApiError` passes through; anything else is a bug and becomes `UNEXPECTED_ERROR` with a generic message, never its internal text. Queries do not retry 4xx or `UNEXPECTED_RESPONSE`.
 
 ### 3.3 Validating what comes back
 
@@ -301,17 +302,17 @@ export type Transaction = z.output<typeof transactionSchema>;
 ### 3.5 Auth in the browser
 
 - The access token is never stored in `localStorage` or `sessionStorage` and never readable by browser JavaScript.
-- Next.js server code (route handlers) holds the token in an `httpOnly`, `Secure` (in production), `SameSite=Lax`, 30-minute cookie `ofi_session` and forwards it to the API. Backend-for-frontend routes (Milestone 4):
+- Next.js server code (route handlers) holds the token in an `httpOnly`, `Secure` (in production), `SameSite=Lax`, 30-minute cookie `ofi_session` and forwards it to the API. These Next.js routes follow the backend-for-frontend (BFF) pattern. The browser calls `/api/...` on the Next.js server; the FastAPI backend serves `/api/v1/...`. They are two different servers, and only the Next.js server talks to the backend:
 
   | Route | What it does |
   | --- | --- |
-  | `POST /session/login` | JSON `{username, password}` → calls `POST /api/v1/auth/token` server-side, sets the cookie, returns 204; on failure returns the API's error envelope unchanged. |
-  | `POST /session/logout` | Clears the cookie (204). |
-  | `GET/POST/PATCH /bff/{path}` | Forwards to `${OFI_API_URL}/api/v1/{path}` with `Authorization: Bearer <cookie>`, passing status, body and `X-Request-ID` through. No cookie → 401 `AUTH_NOT_AUTHENTICATED`. Path segments must match `^[A-Za-z0-9._-]+$` (no `.`/`..`) → else 400. API unreachable → 503 `SERVICE_UNAVAILABLE`. |
+  | `POST /auth/login` | JSON `{username, password}` → calls `POST /api/v1/auth/token` server-side, sets the cookie, returns 204; on failure returns the API's error envelope unchanged. |
+  | `POST /auth/logout` | Clears the cookie (204). |
+  | `GET/POST/PATCH /api/{path}` | Forwards to `${OFI_API_URL}/api/v1/{path}` with `Authorization: Bearer <cookie>`, passing status, body and `X-Request-ID` through. GET with a `Sec-Fetch-Site` header other than `same-origin` → 403 (the API audits reads, so cross-site navigations must not record views as the victim). No cookie → 401 `AUTH_NOT_AUTHENTICATED`. Path segments must match `^[A-Za-z0-9._-]+$` (no `.`/`..`) → else 400. API unreachable → 503 `SERVICE_UNAVAILABLE`. |
 
-- Non-GET requests to `/session/*` and `/bff/*` require an `Origin` header equal to the app's origin, otherwise 403 (CSRF defence on top of `SameSite=Lax`).
+- Non-GET requests to `/auth/*` and `/api/*` require an `Origin` header equal to the app's origin, otherwise 403 (CSRF defence on top of `SameSite=Lax`).
 - `src/proxy.ts` redirects page requests without the cookie to `/login?next=…`. It is a convenience: the API decides authorisation.
-- `OFI_API_URL` is server-only (`apps/web/.env.local`); it must never be prefixed `NEXT_PUBLIC_`.
+- `OFI_API_URL` is server-only (`frontend/.env.local`); it must never be prefixed `NEXT_PUBLIC_`.
 - Role-based UI hiding is a convenience only; the API enforces permissions.
 
 ### 3.6 Forms
@@ -345,4 +346,4 @@ export type Transaction = z.output<typeof transactionSchema>;
 
 ## Migration of existing code
 
-Done 2026-10-20: Milestone 1 endpoints use the envelopes, `AppError` subclasses with registry codes, the three global handlers (plus a request-ID middleware safety net for unexpected errors), `extra="forbid"` request models, validation `details` without input values, and request IDs on every log record. Contract tests: `services/api/tests/test_api_contract.py`.
+Done 2026-10-20: Milestone 1 endpoints use the envelopes, `AppError` subclasses with registry codes, the three global handlers (plus a request-ID middleware safety net for unexpected errors), `extra="forbid"` request models, validation `details` without input values, and request IDs on every log record. Contract tests: `backend/tests/api/test_api_contract.py`.

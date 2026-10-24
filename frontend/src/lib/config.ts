@@ -1,0 +1,4 @@
+/** Browser-side configuration. The browser only ever talks to same-origin routes. */
+export const API_BASE = "/api";
+export const AUTH_BASE = "/auth";
+export const REQUEST_TIMEOUT_MS = 20_000;

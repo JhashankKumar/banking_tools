@@ -2,7 +2,7 @@
 
 Detection rules turn transaction records into **alerts**: signals that something deserves an analyst's attention. An alert is never a finding of fraud, a label for a person, or a reason to act automatically. This file is the contract every rule follows and the specification of each registered rule.
 
-Code: `services/api/app/modules/detection/` (contract, facts, registry, rules) and `app/modules/alerts/` (API).
+Code: `backend/app/modules/detection/` (contract, facts, registry, rules) and `app/modules/alerts/` (API).
 
 ## The rule contract
 

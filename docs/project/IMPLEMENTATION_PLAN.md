@@ -33,9 +33,9 @@ Acceptance: FR-10482 path is deterministic and covered by tests.
 - Typed API client and clear loading/empty/error states.
 Acceptance: a user can open FR-10482 and inspect the two-hop path.
 
-Done 2026-10-24 (spec `docs/superpowers/specs/2026-10-24-milestone-4-ui-design.md`):
+Done 2026-10-24 (spec `docs/specs/2026-10-24-milestone-4-ui-design.md`):
 - Screens: Login, Alerts, Cases list, Case page (Why it fired, Evidence, Limitations, money-flow graph with "3D look" / "3D view", edge detail card, timeline, copilot shell), Audit log (Auditor), Users (Supervisor). Light and dark themes.
-- Auth through a Next.js backend-for-frontend (`/session/*`, `/bff/*`); the token stays in an `httpOnly` cookie.
+- Auth through a Next.js backend-for-frontend (`/auth/*`, `/api/*`); the token stays in an `httpOnly` cookie.
 - Backend additions: `GET /api/v1/cases`, `actor_username` on audit events, `rail`/`reference` on graph edges, `evidence_id` on alerts.
 - Verified on a fresh database in a real browser for all three roles; Lighthouse accessibility 100 on Login, Alerts, Cases, Case page, Audit log and Users; keyboard-only path to a graph edge via the accessible list.
 
