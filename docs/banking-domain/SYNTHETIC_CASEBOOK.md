@@ -62,3 +62,4 @@ Expected result: access is denied; no case data is included in model context; a 
 A transfer record has no authoritative settlement status or destination linkage is ambiguous.
 Purpose: test uncertainty reporting.
 Expected result: the app describes only the available record and explicitly names missing information.
+Seeded as: TX-6001 ACC-601 → BEN-601 INR 7,500.00, NEFT, reference SYN-REF-6001, 20 Sep 2026 05:00Z, normalized status `pending` with source status `UNKNOWN`; evidence `EV-10488-TX-6001`. RAPID_ONWARD_TRANSFER v1 raises no alert.

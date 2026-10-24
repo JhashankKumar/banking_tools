@@ -45,6 +45,13 @@ Done 2026-10-24 (spec `docs/specs/2026-10-24-milestone-4-ui-design.md`):
 - Add evidence-linked response schema and citations validation.
 Acceptance: model explains the deterministic path without changing its facts; fake provider tests run without an OpenRouter key or network access.
 
+Done 2026-10-24 (spec `docs/specs/2026-10-24-milestone-5-ai-copilot-design.md`):
+- Copilot: `ModelProvider` + OpenRouter adapter + fake provider; seven case-bound, ID-only tools; bounded harness (6 tool calls, one repair turn); JSON answers in four sections with server-verified citations and value checks; customer-information questions declined and audited; limits from the run log (20/hour per user, US$2/day overall).
+- Chats: several per case, remembered, private to their author; supervisors read others' chats read-only.
+- Case notes: saved from copilot answers (edited first), versioned, submitted for review; supervisors return or approve (keep open / escalate / close with a listed reason); four-eyes rule; one note under review per case (database-enforced); full status history.
+- Seed adds FR-10488 (incomplete settlement status).
+- Pending the owner's key: the live model comparison (`python -m app.modules.copilot.compare`) and a live-answer browser check.
+
 ## Milestone 6 — Security and adversarial tests
 - Test prompt injection, unauthorized access, invalid tools, output grounding, audit logging.
 Acceptance: all defined negative tests pass; limitations documented.
