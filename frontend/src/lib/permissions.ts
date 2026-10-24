@@ -17,6 +17,7 @@ export function navItemsFor(role: Role): NavItem[] {
       return [
         { href: "/alerts", label: "Alerts" },
         { href: "/cases", label: "Cases" },
+        { href: "/reviews", label: "Reviews" },
         { href: "/users", label: "Users" },
       ];
     case "auditor":
