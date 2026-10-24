@@ -19,6 +19,7 @@ class AppError(Exception):
     code: str = "INTERNAL_ERROR"
     message: str = "Something went wrong"
     headers: Mapping[str, str] | None = None
+    details: Sequence[Mapping[str, str]] = ()
 
 
 class NotAuthenticatedError(AppError):
@@ -71,7 +72,9 @@ _HTTP_CODES = {404: ("NOT_FOUND", "Not found"), 405: ("METHOD_NOT_ALLOWED", "Met
 
 async def _app_error(_request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)  # noqa: S101  (registered for AppError only)
-    return error_response(exc.status, exc.code, exc.message, headers=exc.headers)
+    return error_response(
+        exc.status, exc.code, exc.message, details=exc.details, headers=exc.headers
+    )
 
 
 async def _validation_error(_request: Request, exc: Exception) -> JSONResponse:
