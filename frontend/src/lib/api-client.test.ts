@@ -37,6 +37,28 @@ describe("apiClient", () => {
     });
   });
 
+  test("ApiError carries retryAfter from Retry-After header", async () => {
+    stubFetch(
+      jsonResponse(
+        {
+          error: {
+            code: "COPILOT_LIMIT_REACHED",
+            message: "Limit reached.",
+            details: [],
+            request_id: "r1",
+          },
+        },
+        429,
+        { "Retry-After": "120" },
+      ),
+    );
+
+    await expect(apiClient.get("/x", envelope(item))).rejects.toMatchObject({
+      code: "COPILOT_LIMIT_REACHED",
+      retryAfter: 120,
+    });
+  });
+
   test("maps error envelope to ApiError with code, details, requestId", async () => {
     respond(422, {
       error: {

@@ -210,5 +210,117 @@ export const caseRoutes = (overrides: Record<string, () => Response> = {}) => ({
   "/api/cases/FR-10482": () => jsonResponse({ data: CASE_JSON }),
   "/api/alerts": () => jsonResponse(page([ALERT_JSON])),
   "/api/rules": () => jsonResponse({ data: RULES_JSON }),
+  "/api/cases/FR-10482/chats": () => jsonResponse(page([])),
+  "/api/cases/FR-10482/notes": () => jsonResponse(page([])),
+  "/api/cases/FR-10482/status-changes": () => jsonResponse(page([])),
   ...overrides,
 });
+
+export const ANSWER_JSON = {
+  kind: "answer",
+  records: [
+    {
+      text: "TX-1001 moved ₹48,500.00 from ACC-001 to BEN-B.",
+      citations: ["EV-10482-TX-1001"],
+    },
+    { text: "BEN-B then sent funds to ACC-OUT.", citations: ["TX-9001"] },
+  ],
+  calculated: [
+    {
+      text: "Sent on 5 m 28 s after receipt.",
+      citations: ["EV-10482-TX-1001", "EV-10482-TX-1002"],
+    },
+  ],
+  not_established: ["Ownership of ACC-C."],
+  next_checks: ["Review ACC-C's other inbound transfers."],
+  suggestions: [],
+  steps: ["Found money paths (24 h, 3 hops)"],
+};
+
+export const DECLINE_JSON = {
+  kind: "decline",
+  records: [],
+  calculated: [],
+  not_established: [],
+  next_checks: [],
+  suggestions: [
+    "Trace where the funds went",
+    "What is not established?",
+    "Draft a case note",
+  ],
+  steps: [],
+};
+
+export const CHAT_SUMMARY_JSON = {
+  id: "c0ffee00-0000-4000-8000-000000000001",
+  title: "Where did the money go?",
+  author_username: "analyst.demo",
+  updated_at: "2026-10-24T06:12:00Z",
+  message_count: 2,
+  is_own: true,
+};
+
+export const CHAT_JSON = {
+  id: CHAT_SUMMARY_JSON.id,
+  title: CHAT_SUMMARY_JSON.title,
+  author_username: "analyst.demo",
+  is_own: true,
+  messages: [
+    {
+      id: "c0ffee00-0000-4000-8000-0000000000a1",
+      role: "user",
+      question: "Where did the money go?",
+      answer: null,
+      created_at: "2026-10-24T06:11:58Z",
+    },
+    {
+      id: "c0ffee00-0000-4000-8000-0000000000a2",
+      role: "assistant",
+      question: null,
+      answer: ANSWER_JSON,
+      created_at: "2026-10-24T06:12:00Z",
+    },
+  ],
+};
+
+export const NOTE_JSON = {
+  id: "0a0a0a0a-0000-4000-8000-000000000001",
+  case_id: "FR-10482",
+  status: "draft",
+  origin: "ai_drafted",
+  author_username: "analyst.demo",
+  current_version: 1,
+  body: "What the records show\n- TX-1001 moved ₹48,500.00 [EV-10482-TX-1001]",
+  cited_ids: ["TX-1001", "EV-10482-TX-1001"],
+  created_at: "2026-10-24T06:20:00Z",
+  updated_at: "2026-10-24T06:20:00Z",
+  can_edit: true,
+  can_review: false,
+  reviews: [] as object[],
+  versions: [
+    {
+      version: 1,
+      edited_by_username: "analyst.demo",
+      created_at: "2026-10-24T06:20:00Z",
+    },
+  ],
+};
+
+export const STATUS_CHANGE_JSON = {
+  from_status: "open",
+  to_status: "in_review",
+  actor_username: "analyst.demo",
+  reason: "note_submitted",
+  comment: null,
+  note_id: NOTE_JSON.id,
+  created_at: "2026-10-24T06:12:00Z",
+};
+
+export const REVIEW_QUEUE_JSON = {
+  note_id: NOTE_JSON.id,
+  case_id: "FR-10482",
+  case_title:
+    "Rapid onward transfer — potential connected-funds pattern requiring review",
+  author_username: "analyst.demo",
+  submitted_at: "2026-10-24T06:25:00Z",
+};
