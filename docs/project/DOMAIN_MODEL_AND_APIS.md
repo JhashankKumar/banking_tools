@@ -67,6 +67,7 @@ The MVP graph view (ADR 0001 #18): case parties (every account/beneficiary on th
 - `GET /api/v1/dashboard/summary`
 - `GET /api/v1/alerts?case_id=&rule_id=` and `GET /api/v1/alerts/{alert_id}` (alert IDs: `AL-<rule code>-<trigger transaction>`)
 - `GET /api/v1/rules` (detection rule catalog)
+- `GET /api/v1/cases` (paginated case list with `alert_count`, `transaction_count`)
 - `GET /api/v1/cases/{case_id}`
 - `GET /api/v1/cases/{case_id}/transactions`
 - `GET /api/v1/cases/{case_id}/money-paths?max_hops=3&window_hours=24`

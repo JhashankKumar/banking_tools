@@ -28,10 +28,18 @@ def list_audit_events(
     if action is not None:
         query = query.where(AuditEvent.action == action)
     total = session.scalar(select(func.count()).select_from(query.subquery())) or 0
-    events = session.scalars(
-        query.order_by(AuditEvent.id.desc()).limit(page.limit).offset(page.offset)
+    rows = session.execute(
+        query.add_columns(User.username)
+        .outerjoin(User, User.id == AuditEvent.actor_user_id)
+        .order_by(AuditEvent.id.desc())
+        .limit(page.limit)
+        .offset(page.offset)
     ).all()
-    page_out = page_of([AuditEventOut.model_validate(e) for e in events], total, page)
+    items = [
+        AuditEventOut.model_validate(event).model_copy(update={"actor_username": username})
+        for event, username in rows
+    ]
+    page_out = page_of(items, total, page)
     audit.record(
         session,
         action="audit.viewed",
