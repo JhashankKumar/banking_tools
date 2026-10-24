@@ -76,6 +76,8 @@ def test_fr_10482_money_path_exact(client: TestClient, analyst: dict[str, str]) 
                         "status": "settled",
                         "is_final": True,
                         "reversed_by": [],
+                        "rail": "IMPS",
+                        "reference": "SYN-REF-1001",
                         "evidence_id": "EV-10482-TX-1001",
                     },
                     {
@@ -90,6 +92,8 @@ def test_fr_10482_money_path_exact(client: TestClient, analyst: dict[str, str]) 
                         "status": "settled",
                         "is_final": True,
                         "reversed_by": [],
+                        "rail": "IMPS",
+                        "reference": "SYN-REF-1002",
                         "evidence_id": "EV-10482-TX-1002",
                     },
                 ],
@@ -210,3 +214,12 @@ def test_fact_load_is_row_limited(db_session: Session) -> None:
 
     assert result.truncated is True
     assert all(BUDGET in p.limitations for p in result.paths)
+
+
+def test_money_path_edges_include_rail_and_reference(
+    client: TestClient, analyst: dict[str, str]
+) -> None:
+    [path] = paths_of(client, analyst, "FR-10482")["paths"]
+
+    first = path["edges"][0]
+    assert (first["rail"], first["reference"]) == ("IMPS", "SYN-REF-1001")
