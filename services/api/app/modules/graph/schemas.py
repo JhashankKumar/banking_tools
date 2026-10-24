@@ -20,6 +20,8 @@ class TransactionEdgeOut(BaseModel):
     status: TransactionStatus
     is_final: bool
     reversed_by: list[str]
+    rail: str | None
+    reference: str | None
     evidence_id: str | None
 
 

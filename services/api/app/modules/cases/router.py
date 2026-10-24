@@ -9,7 +9,7 @@ from app.core.permissions import Permission
 from app.modules.audit import service as audit
 from app.modules.audit.models import Outcome
 from app.modules.cases import service
-from app.modules.cases.schemas import CaseOut
+from app.modules.cases.schemas import CaseOut, CaseSummaryOut
 from app.modules.graph import service as graph
 from app.modules.graph.schemas import CaseGraphOut, MoneyPathsOut
 from app.modules.transactions import service as transactions
@@ -22,6 +22,22 @@ router = APIRouter(prefix="/cases", tags=["cases"])
 # whether a case exists.
 CaseReader = Annotated[User, Depends(require(Permission.CASE_READ))]
 TransactionReader = Annotated[User, Depends(require(Permission.TRANSACTION_READ))]
+
+
+@router.get("")
+def list_cases(
+    user: CaseReader, session: DbSession, request: Request, page: Page
+) -> PageResponse[CaseSummaryOut]:
+    items, total = service.list_cases(session, page)
+    audit.record(
+        session,
+        action="case.list.viewed",
+        outcome=Outcome.SUCCESS,
+        actor_user_id=user.id,
+        request_id=request_id_of(request),
+        resource_type="case",
+    )
+    return page_of(items, total, page)
 
 
 @router.get("/{case_id}")
