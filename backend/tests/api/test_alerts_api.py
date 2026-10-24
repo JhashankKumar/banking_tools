@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.modules.audit.models import AuditEvent
 from app.modules.users.models import Role
 from app.seed import seed
-from tests.factories import auth_header, make_user
+from tests.factories import assert_error, signed_in
 
 ALERTS_URL = "/api/v1/alerts"
 ALERT_URL = "/api/v1/alerts/AL-ROT-TX-1002"
@@ -20,14 +20,12 @@ def seeded(db_session: Session) -> None:
 
 @pytest.fixture
 def analyst(client: TestClient, db_session: Session) -> dict[str, str]:
-    make_user(db_session, username="analyst.one", role=Role.ANALYST)
-    return auth_header(client, "analyst.one")
+    return signed_in(client, db_session, Role.ANALYST)
 
 
 @pytest.fixture
 def auditor(client: TestClient, db_session: Session) -> dict[str, str]:
-    make_user(db_session, username="auditor.one", role=Role.AUDITOR)
-    return auth_header(client, "auditor.one")
+    return signed_in(client, db_session, Role.AUDITOR)
 
 
 def audit_actions(session: Session) -> list[str]:
@@ -100,8 +98,7 @@ def test_alert_detail_matches_rule_output(client: TestClient, analyst: dict[str,
 def test_alert_not_found_404_code(client: TestClient, analyst: dict[str, str]) -> None:
     response = client.get(f"{ALERTS_URL}/AL-NOPE", headers=analyst)
 
-    assert response.status_code == 404
-    assert response.json()["error"]["code"] == "ALERT_NOT_FOUND"
+    assert_error(response, 404, "ALERT_NOT_FOUND")
 
 
 @pytest.mark.parametrize("url", [ALERTS_URL, ALERT_URL, "/api/v1/rules"])
@@ -137,8 +134,7 @@ def test_alerts_pagination_bounds(
 ) -> None:
     response = client.get(ALERTS_URL, params=params, headers=analyst)
 
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "VALIDATION_FAILED"
+    assert_error(response, 422, "VALIDATION_FAILED")
 
 
 def test_alert_detail_includes_evidence_id(client: TestClient, analyst: dict[str, str]) -> None:

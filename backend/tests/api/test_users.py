@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.audit.models import AuditEvent, Outcome
 from app.modules.users.models import Role, User
-from tests.factories import DEFAULT_PASSWORD, auth_header, make_user
+from tests.factories import DEFAULT_PASSWORD, assert_error, auth_header, make_user
 
 USERS_URL = "/api/v1/users"
 NEW_PASSWORD = "a-new-long-password-123"
@@ -140,8 +140,7 @@ def test_supervisor_cannot_deactivate_or_demote_self(
 ) -> None:
     response = client.patch(f"{USERS_URL}/{supervisor.id}", json=change, headers=supervisor_headers)
 
-    assert response.status_code == 409
-    assert response.json()["error"]["code"] == "USER_SELF_LOCKOUT"
+    assert_error(response, 409, "USER_SELF_LOCKOUT")
     assert response.json()["error"]["message"] == (
         "Supervisors cannot deactivate or change the role of their own account"
     )

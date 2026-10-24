@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.security import create_access_token
 from app.modules.audit.models import AuditEvent, Outcome
 from app.modules.users.models import Role, User
-from tests.factories import DEFAULT_PASSWORD, auth_header, make_user
+from tests.factories import DEFAULT_PASSWORD, auth_header, make_user, signed_in
 
 TOKEN_URL = "/api/v1/auth/token"
 ME_URL = "/api/v1/auth/me"
@@ -112,8 +112,7 @@ def test_expired_token_rejected(client: TestClient, db_session: Session) -> None
 
 
 def test_tampered_token_rejected(client: TestClient, db_session: Session) -> None:
-    make_user(db_session, username="analyst.one", role=Role.ANALYST)
-    token = auth_header(client, "analyst.one")["Authorization"]
+    token = signed_in(client, db_session, Role.ANALYST)["Authorization"]
     tampered = token[:-2] + ("A" if token[-2] != "A" else "B") + token[-1]
 
     response = client.get(ME_URL, headers={"Authorization": tampered})

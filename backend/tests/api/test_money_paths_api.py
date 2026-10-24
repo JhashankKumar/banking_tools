@@ -17,7 +17,7 @@ from app.modules.graph.paths import (
 )
 from app.modules.users.models import Role
 from app.seed import seed
-from tests.factories import auth_header, make_user
+from tests.factories import assert_error, signed_in
 
 
 def url(case_id: str) -> str:
@@ -32,8 +32,7 @@ def seeded(db_session: Session) -> None:
 
 @pytest.fixture
 def analyst(client: TestClient, db_session: Session) -> dict[str, str]:
-    make_user(db_session, username="analyst.one", role=Role.ANALYST)
-    return auth_header(client, "analyst.one")
+    return signed_in(client, db_session, Role.ANALYST)
 
 
 def paths_of(client: TestClient, headers: dict[str, str], case_id: str, **params: int) -> Any:
@@ -153,15 +152,13 @@ def test_parameter_bounds_422(
 ) -> None:
     response = client.get(url("FR-10482"), params=params, headers=analyst)
 
-    assert response.status_code == 422
-    assert response.json()["error"]["code"] == "VALIDATION_FAILED"
+    assert_error(response, 422, "VALIDATION_FAILED")
 
 
 def test_unknown_case_404(client: TestClient, analyst: dict[str, str]) -> None:
     response = client.get(url("FR-99999"), headers=analyst)
 
-    assert response.status_code == 404
-    assert response.json()["error"]["code"] == "CASE_NOT_FOUND"
+    assert_error(response, 404, "CASE_NOT_FOUND")
 
 
 def test_money_paths_require_auth(client: TestClient) -> None:
@@ -171,8 +168,7 @@ def test_money_paths_require_auth(client: TestClient) -> None:
 def test_auditor_denied_money_paths_regardless_of_existence(
     client: TestClient, db_session: Session
 ) -> None:
-    make_user(db_session, username="auditor.one", role=Role.AUDITOR)
-    headers = auth_header(client, "auditor.one")
+    headers = signed_in(client, db_session, Role.AUDITOR)
 
     existing = client.get(url("FR-10482"), headers=headers)
     missing = client.get(url("FR-99999"), headers=headers)

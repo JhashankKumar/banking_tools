@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.modules.audit.models import AuditEvent
 from app.modules.users.models import Role
 from app.seed import seed
-from tests.factories import auth_header, make_user
+from tests.factories import auth_header, make_user, signed_in
 
 URL = "/api/v1/cases"
 
@@ -19,8 +19,7 @@ def seeded(db_session: Session) -> None:
 
 @pytest.fixture
 def analyst(client: TestClient, db_session: Session) -> dict[str, str]:
-    make_user(db_session, username="analyst.one", role=Role.ANALYST)
-    return auth_header(client, "analyst.one")
+    return signed_in(client, db_session, Role.ANALYST)
 
 
 def test_analyst_lists_cases(client: TestClient, analyst: dict[str, str]) -> None:

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.modules.audit.models import AuditEvent, Outcome
 from app.modules.users.models import Role
 from app.seed import seed
-from tests.factories import auth_header, make_user
+from tests.factories import assert_error, signed_in
 
 CASE_URL = "/api/v1/cases/FR-10482"
 TRANSACTIONS_URL = "/api/v1/cases/FR-10482/transactions"
@@ -20,14 +20,12 @@ def seeded(db_session: Session) -> None:
 
 @pytest.fixture
 def analyst_headers(client: TestClient, db_session: Session) -> dict[str, str]:
-    make_user(db_session, username="analyst.one", role=Role.ANALYST)
-    return auth_header(client, "analyst.one")
+    return signed_in(client, db_session, Role.ANALYST)
 
 
 @pytest.fixture
 def auditor_headers(client: TestClient, db_session: Session) -> dict[str, str]:
-    make_user(db_session, username="auditor.one", role=Role.AUDITOR)
-    return auth_header(client, "auditor.one")
+    return signed_in(client, db_session, Role.AUDITOR)
 
 
 def actions(session: Session, action: str) -> list[AuditEvent]:
@@ -52,8 +50,7 @@ def test_analyst_reads_fr_10482(client: TestClient, analyst_headers: dict[str, s
 def test_case_not_found_404(client: TestClient, analyst_headers: dict[str, str]) -> None:
     response = client.get("/api/v1/cases/FR-99999", headers=analyst_headers)
 
-    assert response.status_code == 404
-    assert response.json()["error"]["code"] == "CASE_NOT_FOUND"
+    assert_error(response, 404, "CASE_NOT_FOUND")
 
 
 @pytest.mark.parametrize("url", [CASE_URL, TRANSACTIONS_URL])
