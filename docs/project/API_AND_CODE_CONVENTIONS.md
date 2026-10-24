@@ -79,8 +79,17 @@ Codes are stable once released. Add new codes here in the same change that intro
 | `USER_NOT_FOUND`           | 404  |                                                                                               |
 | `USER_USERNAME_TAKEN`      | 409  |                                                                                               |
 | `USER_SELF_LOCKOUT`        | 409  | A Supervisor tried to deactivate or demote their own account.                                 |
-| `RATE_LIMITED`             | 429  | Sets `Retry-After`. (Milestone 5+)                                                            |
-| `MODEL_UNAVAILABLE`        | 503  | The LLM provider failed or timed out; deterministic features still work. (Milestone 5)        |
+| `COPILOT_LIMIT_REACHED`    | 429  | Hourly question limit or daily copilot budget reached. Sets `Retry-After` (seconds).          |
+| `COPILOT_UNAVAILABLE`      | 503  | No model key, the model failed, or its answer failed grounding checks twice. Case data still works. |
+| `COPILOT_CHAT_NOT_FOUND`   | 404  | No such chat on this case, or another analyst's chat (never revealed).                        |
+| `COPILOT_CHAT_READ_ONLY`   | 403  | A Supervisor tried to ask inside someone else's chat; they may read it only.                   |
+| `NOTE_NOT_FOUND`           | 404  |                                                                                               |
+| `NOTE_FORBIDDEN`           | 403  | Only a note's author may edit or submit it.                                                   |
+| `NOTE_STATUS_CONFLICT`     | 409  | The note's status does not allow that action (e.g. editing a note awaiting review).           |
+| `NOTE_REVIEW_PENDING`      | 409  | Another note on this case is already awaiting review (one at a time, enforced by the database). |
+| `NOTE_SELF_REVIEW`         | 409  | A reviewer tried to review their own note (four-eyes rule).                                   |
+| `NOTE_CITATION_INVALID`    | 422  | The note cites an EV- ID outside this case or an unknown TX- ID; see `details`.               |
+| `CASE_STATUS_CONFLICT`     | 409  | The case's status does not allow that transition (e.g. anything on a closed case).            |
 | `SERVICE_UNAVAILABLE`      | 503  | A dependency (e.g. database) is down.                                                         |
 | `INTERNAL_ERROR`           | 500  | Anything unexpected. Message is always the generic "Something went wrong".                    |
 

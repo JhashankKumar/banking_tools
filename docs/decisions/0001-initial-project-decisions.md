@@ -38,4 +38,4 @@ Must-ship: Milestones 0–5. Milestone 6 partial. Milestone 7 stretch.
 
 ## Open
 
-- Exact open-weight model, chosen by Claude after tool-calling tests (no user preference).
+- Exact open-weight model, chosen by Claude after tool-calling tests (no user preference). Default until then: `openai/gpt-oss-120b` (`OPENROUTER_MODEL`). Run `uv run python -m app.modules.copilot.compare --models <ids> --cap-usd 1.00` once `OPENROUTER_API_KEY` is set and record the table here.
