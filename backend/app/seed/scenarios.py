@@ -420,5 +420,57 @@ def fr_10486() -> Scenario:
     )
 
 
+def fr_10488() -> Scenario:
+    """Incomplete data: the transfer has no authoritative settlement status. Raises no alert."""
+    s = "fr-10488"
+    return Scenario(
+        id=s,
+        records=[
+            Account(
+                id="ACC-601",
+                customer_id=None,
+                status=AccountStatus.ACTIVE,
+                currency="INR",
+                scenario_id=s,
+            ),
+            Beneficiary(
+                id="BEN-601",
+                display_label="Synthetic Beneficiary 601",
+                identifier_type=IdentifierType.ACCOUNT,
+                scenario_id=s,
+            ),
+            Transaction(
+                id="TX-6001",
+                source_account_id="ACC-601",
+                destination_beneficiary_id="BEN-601",
+                amount=Decimal("7500.00"),
+                currency="INR",
+                occurred_at=_utc(2026, 9, 20, 5, 0, 0),
+                status=TransactionStatus.PENDING,
+                source_status="UNKNOWN",
+                rail="NEFT",
+                reference="SYN-REF-6001",
+                scenario_id=s,
+            ),
+            Case(
+                id="FR-10488",
+                title="Transfer without an authoritative settlement status",
+                status=CaseStatus.OPEN,
+                opened_at=_utc(2026, 9, 20, 5, 30, 0),
+                scenario_id=s,
+            ),
+            _evidence(
+                "FR-10488",
+                EvidenceType.TRANSACTION,
+                "transactions",
+                "TX-6001",
+                EvidenceLabel.OBSERVED_FACT,
+                s,
+            ),
+        ],
+        case_links=[("FR-10488", "TX-6001")],
+    )
+
+
 def all_scenarios() -> list[Scenario]:
-    return [fr_10482(), fr_10483(), fr_10484(), fr_10485(), fr_10486()]
+    return [fr_10482(), fr_10483(), fr_10484(), fr_10485(), fr_10486(), fr_10488()]
