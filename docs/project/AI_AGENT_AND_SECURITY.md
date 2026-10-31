@@ -89,6 +89,20 @@ Threats include:
 - Security tests for every threat above.
 - Human review required for consequential conclusions or actions.
 
+## How each threat is tested
+Run from the Safety checks page (`/safety`) or `cd backend && uv run pytest -q tests/security`. Known gaps: [SECURITY_LIMITATIONS.md](SECURITY_LIMITATIONS.md).
+
+| Threat (above) | Checks |
+|---|---|
+| 1. Prompt injection in records | INJ-01 … INJ-05 |
+| 2. Unauthorized case/account lookup | ACC-01 … ACC-07, INJ-02, CUS-01 … CUS-09, `test_http_negatives.py` |
+| 3. Hallucinated transactions, evidence or conclusions | GRD-01 … GRD-04, INJ-03, INJ-04 |
+| 4. Tool-call loops and excessive resource use | TOOL-03, TOOL-04, LIM-01, LIM-02 |
+| 5. Malformed model output | TOOL-01, TOOL-02, INJ-05, the repair turn in GRD-02/03 |
+| 6. Secrets leaked in logs or prompts | AUD-01, AUD-02, `test_error_bodies_hide_internals` |
+| 7. Unsafe dependency or model license | Not tested here: dependency review is manual (see `TECH_STACK.md`) |
+| 8. Risk indicator treated as proof of guilt | INJ-03 (conclusion-wording guard); human review of every note (ACC-04) |
+
 ## Demo roles
 - Analyst: permitted synthetic cases and investigation tools.
 - Supervisor: review/approve demo case status transitions; create, update, and deactivate users.

@@ -56,11 +56,22 @@ Done 2026-10-24 (spec `docs/specs/2026-10-24-milestone-5-ai-copilot-design.md`):
 - Test prompt injection, unauthorized access, invalid tools, output grounding, audit logging.
 Acceptance: all defined negative tests pass; limitations documented.
 
+Done 2026-10-30 (spec `docs/specs/2026-10-30-milestones-6-7-safety-and-benchmark-design.md`):
+- Safety checks: 33 scripted attacks in 7 groups (prompt injection, customer information, access control, tool abuse, grounding, limits, audit and secrets) run against the real defences inside a rolled-back transaction; only the model is scripted. Each check was seen to fail with its defence switched off.
+- In-app **Safety checks** page (`/safety`, Supervisor and Auditor): run on demand, results per check, one `safety.checks.run` audit row per run.
+- `backend/tests/security/`: the catalogue as tests, plus every API route without a token, the auditor on case routes, the analyst on safety and users, and error bodies without internals.
+- `docs/project/SECURITY_LIMITATIONS.md`: what is not covered, with the measured customer-information filter misses (17 of 24 paraphrases).
+
 ## Milestone 7 — Benchmark and open-source polish
 - Add scenario families and reproducible evaluation.
 - Publish actual measured results and caveats.
 - Improve README screenshots/demo, issue templates, contribution guide, first issues.
 Acceptance: a new contributor can reproduce the demo and evaluation from scratch.
+
+Done 2026-10-30/31:
+- `python -m app.benchmark`: 15 seeded synthetic scenario families labelled from the rule's contract; rule, path and answer-validator scores; published in `docs/evaluation/results/` with caveats; CI checks they reproduce.
+- README screenshots and sections, `docs/DEMO.md`, issue and PR templates, updated CONTRIBUTING, drafted `FIRST_ISSUES.md`.
+- Pending the owner's key: the live-model section (`--live`) and the M5 model comparison.
 
 ## Work protocol for a coding agent
 At the start of each milestone:

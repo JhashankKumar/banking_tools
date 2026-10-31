@@ -25,8 +25,10 @@ Include at least:
 - model attempts unknown tool or malformed arguments.
 
 ## Metrics to report
+Measured results: [docs/evaluation/results/RESULTS.md](../evaluation/results/RESULTS.md) (how: [docs/evaluation/README.md](../evaluation/README.md)). Adversarial suite: Safety checks page and `backend/tests/security/`.
+
 - Rule precision and recall on labeled synthetic scenarios.
-- PR-AUC for an ML baseline if implemented and labels support it.
+- PR-AUC for an ML baseline if implemented and labels support it (not implemented).
 - Graph path recall/precision against known generated paths.
 - Evidence citation validity rate.
 - Unsupported factual claim rate in a curated evaluation set.
