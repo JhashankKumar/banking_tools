@@ -193,3 +193,25 @@ def test_run_stops_before_overspending_the_budget(ctx_for: Ctx) -> None:
         )
 
     assert len(provider.calls) == 2  # 0.30 spent, 0.60 reached the cap: no third call.
+
+
+def test_no_model_call_starts_after_the_run_deadline(ctx_for: Ctx) -> None:
+    provider = FakeModelProvider([fake_text(PLAIN)])
+
+    with pytest.raises(CopilotUnavailableError):
+        _run(provider, ctx_for("FR-10482"), copilot_run_deadline_s=0)
+
+    assert provider.calls == []
+
+
+def test_answer_naming_an_unknown_record_gets_a_repair_turn(ctx_for: Ctx) -> None:
+    unknown = _answer_json(
+        records=[{"text": "TX-4242 is linked.", "citations": ["EV-10482-TX-1001"]}]
+    )
+    provider = FakeModelProvider([fake_text(unknown), fake_text(PLAIN)])
+
+    result = _run(provider, ctx_for("FR-10482"))
+
+    assert result.answer.records[0].text == "TX-1001 is on the case."
+    repair = provider.calls[1][0][-1].content or ""
+    assert "Record ID not found in the case records: TX-4242" in repair
