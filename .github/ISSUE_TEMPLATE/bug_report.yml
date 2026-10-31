@@ -1,0 +1,46 @@
+name: Bug report
+description: Something does not work as documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use synthetic data only. For security problems, do not open an issue: see SECURITY.md.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Starting from a freshly seeded database (`python -m app.seed`), with the role you signed in as.
+      placeholder: |
+        1. Sign in as analyst.demo
+        2. Open FR-10482
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: Include the request ID shown with any error.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Git commit (git rev-parse --short HEAD), browser and OS.
+    validations:
+      required: true
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Data and secrets
+      options:
+        - label: I removed any real customer data, secrets, tokens and API keys from this report, its logs and screenshots.
+          required: true

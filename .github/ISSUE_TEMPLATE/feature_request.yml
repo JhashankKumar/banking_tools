@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest a change or a new capability.
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What an analyst, supervisor or auditor cannot do today, or what goes wrong.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What you would change. Mention any effect on authorization, audit logging or the copilot's grounding rules.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: How we will know it works
+      description: Tests or checks that would show it is done.
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: Data and secrets
+      options:
+        - label: This request uses synthetic data only and contains no secrets.
+          required: true

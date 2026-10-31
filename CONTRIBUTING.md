@@ -29,6 +29,12 @@ Backend (`backend`):
 uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run alembic check && uv run pytest
 ```
 
+The security suite (`uv run pytest -q tests/security`) runs every safety check against the real defences; a new defence needs a check there (see `backend/app/modules/safety/checks/`) that you have seen fail with the defence switched off. If you change detection, paths or the answer validator, rerun the benchmark and commit its output; CI fails if `docs/evaluation/results/` is stale:
+
+```bash
+uv run python -m app.benchmark --seed 20261101 --variants 50
+```
+
 Frontend (`frontend`):
 
 ```bash
