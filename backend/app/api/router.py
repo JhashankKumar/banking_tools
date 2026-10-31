@@ -14,6 +14,7 @@ from app.modules.copilot.router import router as copilot_router
 from app.modules.detection.router import router as rules_router
 from app.modules.notes.router import queue_router as notes_queue_router
 from app.modules.notes.router import router as notes_router
+from app.modules.safety.router import router as safety_router
 from app.modules.users.router import router as users_router
 
 api_router = APIRouter(prefix="/api/v1")
@@ -47,3 +48,4 @@ api_router.include_router(notes_queue_router)
 api_router.include_router(audit_router)
 api_router.include_router(alerts_router)
 api_router.include_router(rules_router)
+api_router.include_router(safety_router)
