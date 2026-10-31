@@ -26,3 +26,5 @@ OpenFraud Investigator is a demonstration application that uses synthetic data o
 - secret or sensitive-data exposure in logs, responses, or client code.
 
 The project makes no claim of production readiness or regulatory compliance.
+
+Known gaps are listed, with measurements, in [docs/project/SECURITY_LIMITATIONS.md](docs/project/SECURITY_LIMITATIONS.md). The defences that are in place can be exercised from the in-app **Safety checks** page (Supervisor or Auditor) or with `cd backend && uv run pytest -q tests/security`.
