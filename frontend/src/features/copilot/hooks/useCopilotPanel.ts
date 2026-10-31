@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { asApiError } from "@/lib/api-error";
 
+import { keptChatId } from "../api";
 import { useAsk, useChat, useChats } from "../queries";
 
 export type PanelView = "list" | "chat" | "new";
@@ -43,7 +44,17 @@ export function useCopilotPanel(caseId: string) {
     ask: (question: string) =>
       askMutation.mutate(
         { chatId: view === "chat" ? chatId : null, question },
-        { onSuccess: (data) => openChat(data.chat.id) },
+        {
+          onSuccess: (data) => openChat(data.chat.id),
+          // The question was kept in a chat: show it there (with the error) so a retry
+          // asks in that chat instead of starting another.
+          onError: (failure) => {
+            const kept = keptChatId(failure);
+            if (kept === null) return;
+            setChatId(kept);
+            setView("chat");
+          },
+        },
       ),
   };
 }
