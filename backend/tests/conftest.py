@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session
 from app.core.config import ENV_FILE, get_settings
 from app.db.session import build_engine, get_engine, get_session
 from app.main import create_app
+from app.modules.safety.router import get_safety_connection
 
 API_ROOT = Path(__file__).resolve().parents[1]
 TEST_JWT_SECRET = "test-only-jwt-secret-not-for-real-use-0123456789"
@@ -98,6 +99,8 @@ def app(engine: Engine, db_session: Session) -> FastAPI:
 
     application.dependency_overrides[get_session] = _session
     application.dependency_overrides[get_engine] = lambda: engine
+    # The safety run sees the test's uncommitted data and is rolled back inside its transaction.
+    application.dependency_overrides[get_safety_connection] = lambda: db_session.connection()
     return application
 
 
