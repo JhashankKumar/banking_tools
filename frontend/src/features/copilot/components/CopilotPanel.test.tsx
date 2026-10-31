@@ -238,4 +238,48 @@ describe("CopilotPanel", () => {
     );
     expect(screen.getByText("Try again in 10 min.")).toBeVisible();
   });
+
+  test("after a 503 the kept chat opens and a retry asks in it", async () => {
+    let asked = 0;
+    const fetchMock = stubFetch({
+      [`${CHATS}/`]: () =>
+        jsonResponse({
+          data: { ...CHAT_JSON, messages: CHAT_JSON.messages.slice(0, 1) },
+        }),
+      [CHATS]: () => jsonResponse(page([])),
+      [ASK]: () =>
+        asked++ === 0
+          ? apiError("COPILOT_UNAVAILABLE", 503, {
+              message: "The copilot is unavailable right now.",
+              details: [{ field: "chat_id", message: CHAT_JSON.id }],
+            })
+          : askReply(ANSWER_JSON),
+    });
+    renderPanel();
+    const user = userEvent.setup();
+    await screen.findByText("No chats yet. Start one with + New chat.");
+    await user.click(barButton());
+    const ask = (q: string) =>
+      user.type(
+        screen.getByRole("textbox", { name: "Ask the copilot" }),
+        `${q}{Enter}`,
+      );
+
+    await ask("Where did the money go?");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "The copilot is unavailable right now.",
+    );
+    expect(
+      await screen.findByRole("textbox", { name: "Ask the copilot" }),
+    ).toHaveAttribute("placeholder", "Ask a follow-up…");
+    await ask("Where did the money go?");
+    await waitFor(() => expect(asked).toBe(2));
+    const bodies = callsOf(fetchMock)
+      .filter(([url]) => url === ASK)
+      .map(
+        ([, init]) => JSON.parse(String(init?.body)) as { chat_id: unknown },
+      );
+    expect(bodies.map((b) => b.chat_id)).toEqual([null, CHAT_JSON.id]);
+  });
 });

@@ -43,6 +43,18 @@ describe("TopNav", () => {
     expect(links).not.toContain("Audit");
   });
 
+  test("shows Safety checks to supervisor and auditor only", () => {
+    for (const me of [ME.supervisor, ME.auditor]) {
+      const { unmount } = renderWithClient(<TopNav me={me} />);
+      expect(
+        screen.getByRole("link", { name: "Safety checks" }),
+      ).toHaveAttribute("href", "/safety");
+      unmount();
+    }
+    renderWithClient(<TopNav me={ME.analyst} />);
+    expect(screen.queryByRole("link", { name: "Safety checks" })).toBeNull();
+  });
+
   test("marks the current section", () => {
     renderWithClient(<TopNav me={ME.analyst} />);
 
