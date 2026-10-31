@@ -398,3 +398,27 @@ def test_note_cannot_cite_another_cases_transaction(
     response = client.post(NOTES, json={"body": "Unrelated TX-3001"}, headers=analyst)
 
     assert_error(response, 422, "NOTE_CITATION_INVALID")
+
+
+def test_note_list_query_count_does_not_grow_with_notes(
+    client: TestClient, engine: Engine, analyst: dict[str, str], supervisor: dict[str, str]
+) -> None:
+    def list_queries() -> int:
+        statements: list[str] = []
+
+        def capture(_conn: Any, _cursor: Any, statement: str, *_args: Any) -> None:
+            statements.append(statement)
+
+        event.listen(engine, "before_cursor_execute", capture)
+        try:
+            assert client.get(NOTES, headers=analyst).status_code == 200
+        finally:
+            event.remove(engine, "before_cursor_execute", capture)
+        return len(statements)
+
+    review(client, supervisor, submitted(client, analyst), decision="return", comment="Add more")
+    one = list_queries()
+    for _ in range(3):
+        create(client, analyst)
+
+    assert list_queries() == one

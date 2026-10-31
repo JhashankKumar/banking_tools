@@ -146,11 +146,19 @@ def get_chat(session: Session, case_id: str, chat_id: uuid.UUID, user: User) -> 
 
 
 def _history(session: Session, chat_id: uuid.UUID, limit: int) -> list[ChatMessage]:
-    """Earlier turns as model context: questions verbatim, answers as their JSON."""
+    """The last `limit` turns as model context: questions verbatim, answers as their JSON."""
     if limit == 0:
         return []
+    latest = list(
+        session.scalars(
+            select(CopilotMessage)
+            .where(CopilotMessage.chat_id == chat_id)
+            .order_by(CopilotMessage.created_at.desc(), CopilotMessage.role.desc())
+            .limit(limit)
+        )
+    )
     out: list[ChatMessage] = []
-    for m in _messages(session, chat_id)[-limit:]:
+    for m in reversed(latest):
         if m.role == MessageRole.USER:
             out.append(ChatMessage("user", m.question))
         elif m.answer is not None:
@@ -264,6 +272,8 @@ def ask(
             max_cost_usd=budget_left,
         )
     except (CopilotUnavailableError, CopilotBudgetExceededError) as error:
+        # Names the chat that kept the question, so a retry asks there, not in a new chat.
+        error.details = [{"field": "chat_id", "message": str(chat.id)}]
         record_run(
             session,
             user_id=user.id,

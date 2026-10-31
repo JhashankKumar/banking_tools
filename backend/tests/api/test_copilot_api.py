@@ -289,3 +289,33 @@ def test_model_decline_is_recorded_and_audited_as_declined(
     actions = db_session.scalars(select(AuditEvent.action)).all()
     assert "copilot.declined" in actions
     assert "copilot.asked" not in actions
+
+
+def test_unavailable_error_names_the_chat_that_kept_the_question(
+    client: TestClient, analyst: dict[str, str], script: Any
+) -> None:
+    script()  # No replies: the model is unreachable.
+
+    response = ask(client, analyst, "Where did the money go?")
+
+    chat_id = client.get(CHATS, headers=analyst).json()["data"][0]["id"]
+    assert response.json()["error"]["details"] == [{"field": "chat_id", "message": chat_id}]
+
+
+def test_history_sends_only_the_latest_messages(
+    client: TestClient, analyst: dict[str, str], script: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OFI_COPILOT_HISTORY_MESSAGES", "2")
+    get_settings.cache_clear()
+    chat_id: str | None = None
+    for question in ("First question?", "Second question?"):
+        money_answer(script)
+        chat_id = ask(client, analyst, question, chat_id).json()["data"]["chat"]["id"]
+    provider = money_answer(script)
+
+    ask(client, analyst, "Third question?", chat_id)
+
+    sent = [(m.role, m.content or "") for m in provider.calls[0][0]]
+    assert [role for role, _ in sent] == ["system", "user", "assistant", "user"]
+    assert sent[1][1] == "Second question?"
+    assert sent[-1][1] == "Third question?"

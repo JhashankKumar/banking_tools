@@ -14,6 +14,7 @@ class Permission(StrEnum):
     CASE_TRANSITION = "case:transition"
     USER_MANAGE = "user:manage"
     AUDIT_READ = "audit:read"
+    SAFETY_RUN = "safety:run"
 
 
 _INVESTIGATE = frozenset(
@@ -27,8 +28,9 @@ _INVESTIGATE = frozenset(
 
 ROLE_PERMISSIONS: Mapping[Role, frozenset[Permission]] = {
     Role.ANALYST: _INVESTIGATE,
-    Role.SUPERVISOR: _INVESTIGATE | {Permission.CASE_TRANSITION, Permission.USER_MANAGE},
-    Role.AUDITOR: frozenset({Permission.AUDIT_READ}),
+    Role.SUPERVISOR: _INVESTIGATE
+    | {Permission.CASE_TRANSITION, Permission.USER_MANAGE, Permission.SAFETY_RUN},
+    Role.AUDITOR: frozenset({Permission.AUDIT_READ, Permission.SAFETY_RUN}),
 }
 
 

@@ -4,9 +4,16 @@
 
 An open-source AI copilot for fraud investigation, transaction graph analysis, and evidence-grounded financial-crime workflows.
 
-> **Status: Milestone 3 — synthetic data, login, case API, detection rules, money paths, and case graph data.** No UI or AI features yet. See the [implementation plan](docs/project/IMPLEMENTATION_PLAN.md).
+> **Status: Milestones 1–7.** Detection rules, money paths, the investigator UI, an evidence-grounded AI copilot with supervisor-reviewed case notes, in-app safety checks and a reproducible benchmark. Live-model results wait for an OpenRouter key. See the [implementation plan](docs/project/IMPLEMENTATION_PLAN.md) and the [demo script](docs/DEMO.md).
 >
 > **Synthetic data only.** This is a demonstration project. Never load real customer or bank data. It is not production-ready and makes no compliance or fraud-accuracy claims.
+
+![Case FR-10482: why the alert fired, the money-flow graph and the evidence](docs/images/case-graph.png)
+
+| | |
+|---|---|
+| ![Alerts list](docs/images/alerts.png) | ![Copilot declining a customer-information question](docs/images/copilot.png) |
+| ![Notes awaiting supervisor review](docs/images/reviews.png) | ![Safety checks: 33 passed](docs/images/safety-checks.png) |
 
 ## Prerequisites
 
@@ -111,6 +118,26 @@ cd backend
 uv run python -m app.modules.copilot.compare --models openai/gpt-oss-120b,qwen/qwen3-235b-a22b-2507 --cap-usd 1.00
 ```
 
+### 6. Safety checks
+
+Sign in as `supervisor.demo` or `auditor.demo` and open **Safety checks** (`/safety`), then press **Run checks**. 33 scripted attacks run against the real defences: prompt injection, customer-information questions, access control, tool abuse, grounding, limits, and audit and secrets. Only the model is scripted; each run happens in a transaction that is rolled back, so data does not change. One `safety.checks.run` audit row records the counts. The same catalogue runs in the test suite:
+
+```bash
+cd backend
+uv run pytest -q tests/security
+```
+
+What the checks do **not** cover, with measurements: [SECURITY_LIMITATIONS.md](docs/project/SECURITY_LIMITATIONS.md).
+
+### 7. Benchmark
+
+```bash
+cd backend
+uv run python -m app.benchmark --seed 20261101 --variants 50
+```
+
+Generates 15 labelled synthetic scenario families (750 variants), scores the detection rule, the money-path finder and the copilot's answer validator, and writes [docs/evaluation/results/](docs/evaluation/results/RESULTS.md). The same seed gives the same metrics on any machine; CI checks the published results. It is a regression benchmark on project-written data, not real-world performance: see [docs/evaluation/README.md](docs/evaluation/README.md).
+
 ## Checks
 
 These are the same checks CI runs on every push and pull request.
@@ -146,6 +173,8 @@ docs/project/      Product brief, architecture, engineering principles, plan
 docs/banking-domain/  Banking and fraud-investigation domain context
 docs/decisions/    Architecture decision records
 docs/specs/        Design specs (e.g. the Milestone 4 UI)
+docs/evaluation/   Benchmark method and published results
+docs/images/       README screenshots
 .github/workflows/ CI
 ```
 
@@ -154,6 +183,7 @@ docs/specs/        Design specs (e.g. the Milestone 4 UI)
 - [Project knowledge base](docs/project/README.md)
 - [Banking domain knowledge base](docs/banking-domain/README.md)
 - [Detection rules](docs/project/DETECTION_RULES.md) · [API and code conventions](docs/project/API_AND_CODE_CONVENTIONS.md)
+- [Demo script](docs/DEMO.md) · [Security limitations](docs/project/SECURITY_LIMITATIONS.md) · [Evaluation](docs/evaluation/README.md) · [First issues](docs/project/FIRST_ISSUES.md)
 - [Decisions](docs/decisions/)
 - [Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Code of conduct](CODE_OF_CONDUCT.md)
 

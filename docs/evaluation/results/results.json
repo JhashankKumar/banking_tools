@@ -1,0 +1,371 @@
+{
+  "live": {
+    "status": "not run (no key)"
+  },
+  "meta": {
+    "generated_at": "2026-10-30",
+    "python": "3.12.3"
+  },
+  "metrics": {
+    "grounding": {
+      "faithful": {
+        "answers": 200,
+        "false_rejection_rate": 0.0,
+        "false_rejections": 0
+      },
+      "tampered": {
+        "changed_value": {
+          "answers": 200,
+          "rejected": 200,
+          "rejection_rate": 1.0
+        },
+        "conclusion_wording": {
+          "answers": 200,
+          "rejected": 200,
+          "rejection_rate": 1.0
+        },
+        "fabricated_citation": {
+          "answers": 200,
+          "rejected": 200,
+          "rejection_rate": 1.0
+        },
+        "unknown_id": {
+          "answers": 200,
+          "rejected": 200,
+          "rejection_rate": 1.0
+        }
+      }
+    },
+    "paths": {
+      "families": {
+        "circular": {
+          "paths": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 50
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "truncated_results": 0,
+          "variants_scored": 50
+        },
+        "multi_hop": {
+          "paths": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 50
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "truncated_results": 10,
+          "variants_scored": 50
+        },
+        "rapid_onward": {
+          "paths": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 50
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "truncated_results": 0,
+          "variants_scored": 50
+        },
+        "two_hop": {
+          "paths": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 50
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "truncated_results": 0,
+          "variants_scored": 50
+        }
+      },
+      "overall": {
+        "paths": {
+          "fn": 0,
+          "fp": 0,
+          "tp": 200
+        },
+        "precision": 1.0,
+        "recall": 1.0,
+        "truncated_results": 10,
+        "variants_scored": 200
+      }
+    },
+    "rule": {
+      "families": {
+        "benign_high_value": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "circular": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 100
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 0,
+            "tp": 50
+          }
+        },
+        "currency_mismatch": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "duplicate_incoming": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 50
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 0,
+            "tp": 50
+          }
+        },
+        "failed_incoming": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "incoming_below_threshold": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "multi_hop": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 110
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 0,
+            "tp": 50
+          }
+        },
+        "onward_after_window": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "onward_before_incoming": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "onward_below_ratio": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "pending_incoming": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "rapid_onward": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 50
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 0,
+            "tp": 50
+          }
+        },
+        "return_to_sender": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "reversed_incoming": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 0
+          },
+          "precision": null,
+          "recall": null,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 50,
+            "tp": 0
+          }
+        },
+        "two_hop": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 100
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 0,
+            "tp": 50
+          }
+        }
+      },
+      "overall": {
+        "pairs": {
+          "fn": 0,
+          "fp": 0,
+          "tp": 410
+        },
+        "precision": 1.0,
+        "recall": 1.0,
+        "variants": {
+          "fn": 0,
+          "fp": 0,
+          "tn": 500,
+          "tp": 250
+        }
+      }
+    }
+  },
+  "parameters": {
+    "command": "cd backend && uv run python -m app.benchmark --seed 20261101 --variants 50",
+    "path_max_hops": 3,
+    "path_window_hours": 24,
+    "rule": "RAPID_ONWARD_TRANSFER v1",
+    "rule_min_incoming_inr": "10000.00",
+    "rule_min_onward_ratio": "0.50",
+    "rule_window_seconds": 1800,
+    "seed": 20261101,
+    "variants_per_family": 50
+  },
+  "variants": {
+    "benign_high_value": 50,
+    "circular": 50,
+    "currency_mismatch": 50,
+    "duplicate_incoming": 50,
+    "failed_incoming": 50,
+    "incoming_below_threshold": 50,
+    "multi_hop": 50,
+    "onward_after_window": 50,
+    "onward_before_incoming": 50,
+    "onward_below_ratio": 50,
+    "pending_incoming": 50,
+    "rapid_onward": 50,
+    "return_to_sender": 50,
+    "reversed_incoming": 50,
+    "two_hop": 50
+  }
+}

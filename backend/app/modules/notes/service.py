@@ -174,26 +174,51 @@ def _username(session: Session, user_id: uuid.UUID) -> str:
     return session.get_one(User, user_id).username
 
 
+def notes_out(session: Session, notes: list[CaseNote], user: User) -> list[NoteOut]:
+    """Three queries for any number of notes: versions, reviews, then usernames."""
+    note_ids = [n.id for n in notes]
+    versions: dict[uuid.UUID, list[CaseNoteVersion]] = {i: [] for i in note_ids}
+    for v in session.scalars(
+        select(CaseNoteVersion)
+        .where(CaseNoteVersion.note_id.in_(note_ids))
+        .order_by(CaseNoteVersion.version)
+    ):
+        versions[v.note_id].append(v)
+    reviews: dict[uuid.UUID, list[NoteReview]] = {i: [] for i in note_ids}
+    for r in session.scalars(
+        select(NoteReview).where(NoteReview.note_id.in_(note_ids)).order_by(NoteReview.created_at)
+    ):
+        reviews[r.note_id].append(r)
+    user_ids = {n.author_id for n in notes}
+    user_ids |= {v.edited_by for vs in versions.values() for v in vs}
+    user_ids |= {r.reviewer_id for rs in reviews.values() for r in rs}
+    names: dict[uuid.UUID, str] = {
+        user_id: username
+        for user_id, username in session.execute(
+            select(User.id, User.username).where(User.id.in_(user_ids))
+        )
+    }
+    return [_note_out(n, user, versions[n.id], reviews[n.id], names) for n in notes]
+
+
 def note_out(session: Session, note: CaseNote, user: User) -> NoteOut:
-    versions = list(
-        session.scalars(
-            select(CaseNoteVersion)
-            .where(CaseNoteVersion.note_id == note.id)
-            .order_by(CaseNoteVersion.version)
-        )
-    )
-    reviews = list(
-        session.scalars(
-            select(NoteReview).where(NoteReview.note_id == note.id).order_by(NoteReview.created_at)
-        )
-    )
+    return notes_out(session, [note], user)[0]
+
+
+def _note_out(
+    note: CaseNote,
+    user: User,
+    versions: list[CaseNoteVersion],
+    reviews: list[NoteReview],
+    names: dict[uuid.UUID, str],
+) -> NoteOut:
     current = versions[-1]
     return NoteOut(
         id=note.id,
         case_id=note.case_id,
         status=note.status,
         origin=note.origin,
-        author_username=_username(session, note.author_id),
+        author_username=names[note.author_id],
         current_version=note.current_version,
         body=current.body,
         cited_ids=current.cited_ids,
@@ -209,7 +234,7 @@ def note_out(session: Session, note: CaseNote, user: User) -> NoteOut:
             ReviewOut(
                 decision=r.decision,
                 version=r.version,
-                reviewer_username=_username(session, r.reviewer_id),
+                reviewer_username=names[r.reviewer_id],
                 comment=r.comment,
                 reason=r.reason,
                 created_at=r.created_at,
@@ -219,7 +244,7 @@ def note_out(session: Session, note: CaseNote, user: User) -> NoteOut:
         versions=[
             VersionOut(
                 version=v.version,
-                edited_by_username=_username(session, v.edited_by),
+                edited_by_username=names[v.edited_by],
                 created_at=v.created_at,
             )
             for v in versions
@@ -232,8 +257,8 @@ def list_notes(
 ) -> tuple[list[NoteOut], int]:
     _case(session, case_id)
     query = select(CaseNote).where(CaseNote.case_id == case_id)
-    notes = session.scalars(paged(query.order_by(CaseNote.created_at.desc()), page))
-    return [note_out(session, n, user) for n in notes], count_rows(session, query)
+    notes = list(session.scalars(paged(query.order_by(CaseNote.created_at.desc()), page)))
+    return notes_out(session, notes, user), count_rows(session, query)
 
 
 def _load_note(

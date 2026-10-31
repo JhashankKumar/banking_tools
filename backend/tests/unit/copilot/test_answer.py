@@ -253,3 +253,34 @@ def test_free_text_lists_are_bounded() -> None:
     for content in (too_many, too_long):
         with pytest.raises(AnswerFormatError):
             parse_model_answer(content)
+
+
+def test_record_ids_in_text_must_be_citable() -> None:
+    answer = CopilotAnswer(
+        kind="answer",
+        not_established=[
+            "TX-1001 and EV-10482-TX-1001 match; TX-4242 does not.",
+            "Whether EV-99999-X1 exists.",
+        ],
+    )
+
+    _, problems = _validate(answer)
+
+    assert problems == [
+        "Record ID not found in the case records: TX-4242",
+        "Record ID not found in the case records: EV-99999-X1",
+    ]
+
+
+def test_case_transactions_may_be_named_without_a_tool_result() -> None:
+    answer = _answer(AnswerItem(text="TX-1003 is on the case.", citations=["EV-10482-TX-1001"]))
+
+    _, problems = validate_answer(
+        answer,
+        case_evidence_ids=CASE_EVIDENCE,
+        run_record_ids=set(),
+        tool_values=set(),
+        case_transaction_ids=frozenset({"TX-1003"}),
+    )
+
+    assert problems == []

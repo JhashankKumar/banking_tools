@@ -3,7 +3,8 @@
 The model must answer with JSON in four sections. Before an answer is stored, the server
 removes any citation that is not this case's evidence (or a transaction a tool returned in this
 run) and reports any amount, time or elapsed value that does not appear in the tool results:
-the model narrates, it never changes or computes facts.
+the model narrates, it never changes or computes facts. Record IDs typed in the text must be
+ones it may cite too, so a saved answer never names a record outside the case.
 """
 
 import json
@@ -153,15 +154,20 @@ _CONCLUSION = re.compile(
 )
 
 
+_RECORD_ID = re.compile(r"\b(?:EV-[A-Z0-9-]+|TX-\d+)\b")  # The IDs a case note may cite.
+
+
 def validate_answer(
     answer: CopilotAnswer,
     *,
     case_evidence_ids: set[str],
     run_record_ids: set[str],
     tool_values: set[str],
+    case_transaction_ids: frozenset[str] = frozenset(),
 ) -> tuple[CopilotAnswer, list[str]]:
-    """Returns the answer with unverifiable citations removed, plus value problems."""
+    """Returns the answer with unverifiable citations removed, plus value and ID problems."""
     allowed = case_evidence_ids | {i for i in run_record_ids if i.startswith("TX-")}
+    nameable = allowed | case_transaction_ids
 
     def clean(items: list[AnswerItem], *, require_citation: bool) -> list[AnswerItem]:
         kept: list[AnswerItem] = []
@@ -188,6 +194,12 @@ def validate_answer(
         for text in texts
         for raw, key in _values(text)
         if key not in tool_values
+    ]
+    problems += [
+        f"Record ID not found in the case records: {m.group(0)}"
+        for text in texts
+        for m in _RECORD_ID.finditer(text)
+        if m.group(0) not in nameable
     ]
     return cleaned, problems
 

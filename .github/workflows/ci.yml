@@ -58,6 +58,16 @@ jobs:
           uv run alembic upgrade head
           uv run alembic check
       - run: uv run pytest
+      - name: Benchmark reproduces the published results
+        run: |
+          uv run python -m app.benchmark --seed 20261101 --variants 50 --out "$RUNNER_TEMP/bench"
+          uv run python - "$RUNNER_TEMP/bench/results.json" <<'PY'
+          import json, sys
+          drop = lambda r: {k: v for k, v in r.items() if k != "meta"}
+          published = json.load(open("../docs/evaluation/results/results.json"))
+          fresh = json.load(open(sys.argv[1]))
+          sys.exit(0 if drop(published) == drop(fresh) else "Benchmark results differ from docs/evaluation/results; rerun and commit them.")
+          PY
 
   frontend:
     name: Frontend

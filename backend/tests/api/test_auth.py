@@ -98,7 +98,7 @@ def test_me_returns_role_and_permissions(client: TestClient, db_session: Session
         "id": str(user.id),
         "username": "auditor.one",
         "role": "auditor",
-        "permissions": ["audit:read"],
+        "permissions": ["audit:read", "safety:run"],
     }
 
 

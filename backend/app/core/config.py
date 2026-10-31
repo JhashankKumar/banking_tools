@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     copilot_max_tool_calls: int = Field(default=6, ge=1, le=20)
     copilot_max_model_turns: int = Field(default=8, ge=2, le=20)
     copilot_history_messages: int = Field(default=10, ge=0, le=50)
+    # No model call starts after this many seconds; one call is also bounded by its 30 s timeout.
+    copilot_run_deadline_s: int = Field(default=90, ge=5, le=600)
     # Used only when the provider does not report a cost for a call.
     copilot_fallback_cost_per_1k_tokens: Decimal = Field(default=Decimal("0.002"), ge=0)
 

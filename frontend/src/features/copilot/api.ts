@@ -1,4 +1,5 @@
 import { apiClient } from "@/lib/api-client";
+import { asApiError } from "@/lib/api-error";
 import { envelope, pageEnvelope } from "@/lib/schemas";
 
 import { askOutSchema, chatSchema, chatSummarySchema } from "./schemas";
@@ -32,3 +33,7 @@ export const askQuestion = (caseId: string, body: AskBody) =>
     { chat_id: body.chatId, question: body.question },
     envelope(askOutSchema),
   );
+
+/** The chat that kept the question when asking failed (503 or a limit), so a retry asks there. */
+export const keptChatId = (error: unknown): string | null =>
+  asApiError(error).details.find((d) => d.field === "chat_id")?.message ?? null;

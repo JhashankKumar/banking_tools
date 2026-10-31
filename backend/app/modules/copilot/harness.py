@@ -1,9 +1,10 @@
 """The bounded copilot loop (ADR 0001 #12: custom harness, no agent framework).
 
 The model may call only the allowlisted, case-bound tools, at most `copilot_max_tool_calls`
-times within `copilot_max_model_turns` turns. Every call is re-checked against the user's role.
-The final reply must be the JSON answer; if it fails format or grounding checks the model gets
-one repair turn, then the run fails safely without storing a partial answer.
+times within `copilot_max_model_turns` turns and `copilot_run_deadline_s` seconds. Every call
+is re-checked against the user's role. The final reply must be the JSON answer; if it fails
+format or grounding checks the model gets one repair turn, then the run fails safely without
+storing a partial answer.
 """
 
 import json
@@ -20,6 +21,7 @@ from sqlalchemy import select
 from app.core.config import Settings
 from app.core.errors import AppError
 from app.core.permissions import has_permission
+from app.modules.cases.models import case_transactions
 from app.modules.copilot.answer import (
     AnswerFormatError,
     CopilotAnswer,
@@ -161,6 +163,13 @@ def run_copilot(
     evidence_ids = set(
         ctx.session.scalars(select(Evidence.id).where(Evidence.case_id == ctx.case_id))
     )
+    case_transaction_ids = frozenset(
+        ctx.session.scalars(
+            select(case_transactions.c.transaction_id).where(
+                case_transactions.c.case_id == ctx.case_id
+            )
+        )
+    )
     results: list[ToolResult] = []
     steps: list[str] = []
     tool_names: list[str] = []
@@ -177,6 +186,8 @@ def run_copilot(
         return CopilotUnavailableError(usage=spent(), tool_calls=tool_calls_used)
 
     for _turn in range(settings.copilot_max_model_turns):
+        if time.monotonic() - started >= settings.copilot_run_deadline_s:
+            raise unavailable()  # Checked before each call; one call is bounded by its timeout.
         if max_cost_usd is not None and cost >= max_cost_usd:
             raise CopilotBudgetExceededError(
                 datetime.now(UTC), usage=spent(), tool_calls=tool_calls_used
@@ -217,6 +228,7 @@ def run_copilot(
                 case_evidence_ids=evidence_ids,
                 run_record_ids={i for r in results for i in r.record_ids},
                 tool_values=collect_tool_values(results),
+                case_transaction_ids=case_transaction_ids,
             )
         if answer is not None and not problems:
             return HarnessResult(
