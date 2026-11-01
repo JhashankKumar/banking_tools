@@ -23,3 +23,12 @@ def test_every_rule_documents_caveats_and_required_fields() -> None:
 def test_get_rule_known_and_unknown() -> None:
     assert get_rule("RAPID_ONWARD_TRANSFER") is RULES[0]
     assert get_rule("NOPE") is None
+
+
+def test_registered_rules_in_order() -> None:
+    assert [r.rule_id for r in RULES] == [
+        "RAPID_ONWARD_TRANSFER",
+        "FAN_OUT_SPLIT",
+        "FAN_IN_COLLECT",
+        "CIRCULAR_FLOW",
+    ]

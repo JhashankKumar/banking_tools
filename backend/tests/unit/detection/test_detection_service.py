@@ -69,7 +69,12 @@ def test_detection_is_idempotent(db_session: Session) -> None:
     before = snapshot()
     summary = run_detection(db_session)
 
-    assert summary == {"RAPID_ONWARD_TRANSFER": 6}  # one per seeded alert
+    assert summary == {  # one per seeded alert
+        "RAPID_ONWARD_TRANSFER": 6,
+        "FAN_OUT_SPLIT": 2,
+        "FAN_IN_COLLECT": 1,
+        "CIRCULAR_FLOW": 1,
+    }
     assert snapshot() == before
 
 
@@ -185,6 +190,46 @@ def test_detection_run_is_audited(db_session: Session) -> None:
     assert event.actor_user_id is None
     assert event.details == {
         "RAPID_ONWARD_TRANSFER": "6",
-        "rule_versions": "RAPID_ONWARD_TRANSFER:2",
+        "FAN_OUT_SPLIT": "2",
+        "FAN_IN_COLLECT": "1",
+        "CIRCULAR_FLOW": "1",
+        "rule_versions": (
+            "RAPID_ONWARD_TRANSFER:2,FAN_OUT_SPLIT:1,FAN_IN_COLLECT:1,CIRCULAR_FLOW:1"
+        ),
         "new_alerts": "0",
     }
+
+
+@pytest.mark.parametrize(
+    ("alert_id", "rule_id", "case_id", "transaction_ids"),
+    [
+        ("AL-FOS-TX-9006", "FAN_OUT_SPLIT", "FR-10490", [f"TX-900{i}" for i in range(1, 7)]),
+        ("AL-FOS-TX-9406", "FAN_OUT_SPLIT", "FR-10494", [f"TX-940{i}" for i in range(1, 7)]),
+        ("AL-FIC-TX-8906", "FAN_IN_COLLECT", "FR-10489", [f"TX-890{i}" for i in range(1, 7)]),
+        ("AL-CIR-TX-4003", "CIRCULAR_FLOW", "FR-10484", ["TX-4001", "TX-4002", "TX-4003"]),
+    ],
+)
+def test_new_rules_raise_expected_seeded_alerts(
+    db_session: Session, alert_id: str, rule_id: str, case_id: str, transaction_ids: list[str]
+) -> None:
+    alert = db_session.get_one(Alert, alert_id)
+    assert (alert.rule_id, alert.case_id, list(alert.transaction_ids)) == (
+        rule_id,
+        case_id,
+        transaction_ids,
+    )
+    assert alert.explanation.endswith("Signal for analyst review; not a finding of fraud.")
+    assert db_session.get(Evidence, f"EV-{case_id.removeprefix('FR-')}-{alert_id}") is not None
+
+
+def test_payroll_look_alike_metrics(db_session: Session) -> None:
+    metrics = db_session.get_one(Alert, "AL-FOS-TX-9406").metrics
+    assert (metrics["outgoing_count"], metrics["onward_share"], metrics["elapsed_seconds"]) == (
+        "5",
+        "0.80",
+        "1200",
+    )
+
+
+def test_merchant_look_alike_raises_no_alert(db_session: Session) -> None:
+    assert alerts_for_case(db_session, "FR-10495") == []

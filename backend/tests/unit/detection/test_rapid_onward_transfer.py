@@ -7,38 +7,12 @@ import pytest
 from app.modules.detection.facts import Conversion, PartyKey, TransactionFact
 from app.modules.detection.rules.rapid_onward_transfer import RapidOnwardTransfer, describe_elapsed
 from app.modules.transactions.models import TransactionStatus
+from tests.unit.detection.factories import fact
 
 ACC_001: PartyKey = ("account", "ACC-001")
 BEN_B: PartyKey = ("beneficiary", "BEN-B")
 ACC_C: PartyKey = ("account", "ACC-C")
 T0 = datetime(2026, 9, 15, 4, 32, 14, tzinfo=UTC)  # 10:02:14 IST
-
-
-def fact(
-    tx_id: str,
-    source: PartyKey,
-    destination: PartyKey,
-    amount: str,
-    at: datetime,
-    *,
-    currency: str = "INR",
-    status: TransactionStatus = TransactionStatus.SETTLED,
-    reversed_by: tuple[str, ...] = (),
-    reverses: str | None = None,
-    converted: Conversion | None = None,
-) -> TransactionFact:
-    return TransactionFact(
-        id=tx_id,
-        source=source,
-        destination=destination,
-        amount=Decimal(amount),
-        currency=currency,
-        occurred_at=at,
-        status=status,
-        reversed_by=reversed_by,
-        reverses=reverses,
-        converted=converted,
-    )
 
 
 def incoming(**overrides: object) -> TransactionFact:
@@ -268,6 +242,11 @@ def test_one_hit_per_outgoing_and_deterministic_order() -> None:
         (328, "5 minutes 28 seconds"),
         (1800, "30 minutes"),
         (0, "0 seconds"),
+        (3600, "1 hour"),
+        (3900, "1 hour 5 minutes"),
+        (3959, "1 hour 5 minutes"),
+        (18000, "5 hours"),
+        (86400, "24 hours"),
     ],
 )
 def test_elapsed_wording(seconds: int, wording: str) -> None:
