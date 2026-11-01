@@ -19,7 +19,7 @@ describe("AlertsTable", () => {
     );
 
     const row = screen.getByRole("row", { name: /AL-ROT-TX-1002/ });
-    expect(row).toHaveTextContent("RAPID_ONWARD_TRANSFER v1");
+    expect(row).toHaveTextContent("RAPID_ONWARD_TRANSFER v2");
     expect(row).toHaveTextContent("BEN-B");
     expect(row).toHaveTextContent("15 Sep 2026, 10:07:42 IST");
     expect(row).toHaveTextContent("FR-10482 · Open");
