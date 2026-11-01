@@ -1,11 +1,12 @@
 """Fabricated records for the synthetic casebook (docs/banking-domain/SYNTHETIC_CASEBOOK.md).
 
-Times are IST (UTC+05:30) on 15-16 Sep 2026, stored as UTC. None of this is real activity.
+Times are IST (UTC+05:30) in September 2026, stored as UTC. None of this is real activity.
 """
 
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
+from typing import cast
 
 from app.db.base import Base
 from app.modules.cases.models import Case, CaseStatus
@@ -472,5 +473,277 @@ def fr_10488() -> Scenario:
     )
 
 
+# --- Network cases (FR-10489..FR-10493): several parties per case --------------------------
+
+# (id, source, destination, amount, IST time, rail, extras). A party ID starting "BEN-" is a
+# beneficiary, anything else an account. Extras: status, source_status, currency, description,
+# converted (amount, currency, rate) as the source record states it.
+Hop = tuple[str, str, str, str, datetime, str, dict[str, object]]
+
+
+_IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def _ist(*parts: int) -> datetime:
+    """A time in IST (UTC+05:30), returned as UTC."""
+    return datetime(*parts, tzinfo=_IST).astimezone(UTC)
+
+
+def _parties(hops: list[Hop], s: str) -> list[Base]:
+    """One row per party, first seen first; an account takes its first transfer's currency."""
+    seen: dict[str, Base] = {}
+    for _, source, destination, _, _, _, extras in hops:
+        for party in (source, destination):
+            if party in seen:
+                continue
+            seen[party] = (
+                Beneficiary(
+                    id=party,
+                    display_label=f"Synthetic Beneficiary {party.removeprefix('BEN-')}",
+                    identifier_type=IdentifierType.VPA,
+                    scenario_id=s,
+                )
+                if party.startswith("BEN-")
+                else Account(
+                    id=party,
+                    customer_id=None,
+                    status=AccountStatus.ACTIVE,
+                    currency=str(extras.get("currency", "INR")),
+                    scenario_id=s,
+                )
+            )
+    return list(seen.values())
+
+
+def _conversion(extras: dict[str, object]) -> dict[str, object]:
+    converted = extras.get("converted")
+    if not isinstance(converted, tuple):
+        return {}
+    amount, currency, rate = cast(tuple[str, str, str], converted)
+    return {
+        "converted_amount": Decimal(amount),
+        "converted_currency": currency,
+        "fx_rate": Decimal(rate),
+    }
+
+
+def _network_case(case_id: str, title: str, opened_at: datetime, hops: list[Hop]) -> Scenario:
+    s = case_id.lower()
+    transactions: list[Base] = []
+    for tx_id, source, destination, amount, at, rail, extras in hops:
+        side = {
+            ("source_beneficiary_id" if source.startswith("BEN-") else "source_account_id"): source,
+            (
+                "destination_beneficiary_id"
+                if destination.startswith("BEN-")
+                else "destination_account_id"
+            ): destination,
+        }
+        transactions.append(
+            Transaction(
+                id=tx_id,
+                **side,
+                amount=Decimal(amount),
+                currency=str(extras.get("currency", "INR")),
+                occurred_at=at,
+                status=extras.get("status", TransactionStatus.SETTLED),
+                source_status=str(extras.get("source_status", "SUCCESS")),
+                rail=rail,
+                reference=f"SYN-REF-{tx_id.removeprefix('TX-')}",
+                description=extras.get("description"),
+                **_conversion(extras),
+                scenario_id=s,
+            )
+        )
+    tx_ids = [hop[0] for hop in hops]
+    return Scenario(
+        id=s,
+        records=[
+            *_parties(hops, s),
+            *transactions,
+            Case(
+                id=case_id, title=title, status=CaseStatus.OPEN, opened_at=opened_at, scenario_id=s
+            ),
+            *(
+                _evidence(
+                    case_id,
+                    EvidenceType.TRANSACTION,
+                    "transactions",
+                    tx_id,
+                    EvidenceLabel.OBSERVED_FACT,
+                    s,
+                )
+                for tx_id in tx_ids
+            ),
+        ],
+        case_links=[(case_id, tx_id) for tx_id in tx_ids],
+    )
+
+
+def fr_10489() -> Scenario:
+    """Fan-in: five payers into BEN-M89 within 18 min, most of it sent on 7 min later. One alert."""
+    return _network_case(
+        "FR-10489",
+        "Several payers into one beneficiary, then sent on",
+        _ist(2026, 9, 21, 12, 0),
+        [
+            ("TX-8901", "ACC-891", "BEN-M89", "12000.00", _ist(2026, 9, 21, 11, 0, 0), "UPI", {}),
+            ("TX-8902", "ACC-892", "BEN-M89", "15500.00", _ist(2026, 9, 21, 11, 4, 10), "UPI", {}),
+            ("TX-8903", "ACC-893", "BEN-M89", "11000.00", _ist(2026, 9, 21, 11, 9, 30), "UPI", {}),
+            ("TX-8904", "ACC-894", "BEN-M89", "18000.00", _ist(2026, 9, 21, 11, 13, 5), "UPI", {}),
+            ("TX-8905", "ACC-895", "BEN-M89", "14500.00", _ist(2026, 9, 21, 11, 17, 40), "UPI", {}),
+            (
+                "TX-8906",
+                "BEN-M89",
+                "ACC-X89",
+                "68000.00",
+                _ist(2026, 9, 21, 11, 24, 12),
+                "IMPS",
+                {},
+            ),
+        ],
+    )
+
+
+def fr_10490() -> Scenario:
+    """Fan-out: INR 2,00,000 in, split into five transfers each under half of it. No alert (a
+    documented blind spot of the rule, not a clean bill of health)."""
+    return _network_case(
+        "FR-10490",
+        "Large credit split into several smaller transfers",
+        _ist(2026, 9, 22, 15, 0),
+        [
+            ("TX-9001", "ACC-901", "BEN-S90", "200000.00", _ist(2026, 9, 22, 14, 0, 0), "IMPS", {}),
+            ("TX-9002", "BEN-S90", "ACC-902", "39000.00", _ist(2026, 9, 22, 14, 3, 0), "IMPS", {}),
+            ("TX-9003", "BEN-S90", "ACC-903", "38500.00", _ist(2026, 9, 22, 14, 5, 20), "IMPS", {}),
+            ("TX-9004", "BEN-S90", "ACC-904", "40000.00", _ist(2026, 9, 22, 14, 8, 0), "IMPS", {}),
+            (
+                "TX-9005",
+                "BEN-S90",
+                "ACC-905",
+                "39500.00",
+                _ist(2026, 9, 22, 14, 10, 45),
+                "IMPS",
+                {},
+            ),
+            (
+                "TX-9006",
+                "BEN-S90",
+                "ACC-906",
+                "38000.00",
+                _ist(2026, 9, 22, 14, 12, 30),
+                "IMPS",
+                {},
+            ),
+        ],
+    )
+
+
+def fr_10491() -> Scenario:
+    """Fast three-hop chain, minutes apart with slightly shrinking amounts. Two alerts."""
+    return _network_case(
+        "FR-10491",
+        "Funds passed along three hops within minutes",
+        _ist(2026, 9, 23, 11, 0),
+        [
+            ("TX-9101", "ACC-911", "BEN-912", "95000.00", _ist(2026, 9, 23, 10, 0, 0), "IMPS", {}),
+            ("TX-9102", "BEN-912", "ACC-913", "92500.00", _ist(2026, 9, 23, 10, 6, 20), "IMPS", {}),
+            (
+                "TX-9103",
+                "ACC-913",
+                "BEN-914",
+                "90000.00",
+                _ist(2026, 9, 23, 10, 13, 45),
+                "IMPS",
+                {},
+            ),
+        ],
+    )
+
+
+def fr_10492() -> Scenario:
+    """Busy account: a salary credit, a fast pass-through (after a failed attempt), a pending
+    transfer and later rent. Only the pass-through alerts."""
+    return _network_case(
+        "FR-10492",
+        "Account with regular activity and one rapid pass-through",
+        _ist(2026, 9, 24, 19, 0),
+        [
+            (
+                "TX-9201",
+                "ACC-922",
+                "ACC-921",
+                "55000.00",
+                _ist(2026, 9, 24, 9, 30, 0),
+                "NEFT",
+                {"description": "Monthly salary, payroll ref SYN-PAY-0924"},
+            ),
+            ("TX-9202", "ACC-923", "ACC-921", "60000.00", _ist(2026, 9, 24, 13, 0, 0), "IMPS", {}),
+            (
+                "TX-9203",
+                "ACC-921",
+                "BEN-924",
+                "58000.00",
+                _ist(2026, 9, 24, 13, 5, 10),
+                "IMPS",
+                {"status": TransactionStatus.FAILED, "source_status": "FAILED"},
+            ),
+            ("TX-9204", "ACC-921", "BEN-924", "57500.00", _ist(2026, 9, 24, 13, 9, 40), "IMPS", {}),
+            (
+                "TX-9205",
+                "ACC-921",
+                "BEN-925",
+                "8000.00",
+                _ist(2026, 9, 24, 13, 20, 0),
+                "UPI",
+                {"status": TransactionStatus.PENDING, "source_status": "PENDING"},
+            ),
+            (
+                "TX-9206",
+                "ACC-921",
+                "ACC-926",
+                "15000.00",
+                _ist(2026, 9, 24, 18, 0, 0),
+                "NEFT",
+                {"description": "Rent, ref SYN-RENT-0924"},
+            ),
+        ],
+    )
+
+
+def fr_10493() -> Scenario:
+    """INR in, USD out eight minutes later. The USD transfer records what it cost in INR and the
+    rate applied, so the rule compares the two. One alert."""
+    return _network_case(
+        "FR-10493",
+        "Funds received in INR and sent abroad in USD",
+        _ist(2026, 9, 25, 13, 0),
+        [
+            ("TX-9301", "ACC-931", "BEN-932", "85000.00", _ist(2026, 9, 25, 12, 0, 0), "IMPS", {}),
+            (
+                "TX-9302",
+                "BEN-932",
+                "ACC-933",
+                "1000.00",
+                _ist(2026, 9, 25, 12, 8, 0),
+                "SWIFT",
+                {"currency": "USD", "converted": ("83450.00", "INR", "83.45")},
+            ),
+        ],
+    )
+
+
 def all_scenarios() -> list[Scenario]:
-    return [fr_10482(), fr_10483(), fr_10484(), fr_10485(), fr_10486(), fr_10488()]
+    return [
+        fr_10482(),
+        fr_10483(),
+        fr_10484(),
+        fr_10485(),
+        fr_10486(),
+        fr_10488(),
+        fr_10489(),
+        fr_10490(),
+        fr_10491(),
+        fr_10492(),
+        fr_10493(),
+    ]

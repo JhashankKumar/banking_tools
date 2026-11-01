@@ -12,7 +12,7 @@ from app.modules.audit import service as audit
 from app.modules.audit.models import Outcome
 from app.modules.cases.models import Alert, PartyType, case_transactions
 from app.modules.detection.contract import DetectionRule, RuleHit
-from app.modules.detection.facts import PartyKey, TransactionFact
+from app.modules.detection.facts import Conversion, PartyKey, TransactionFact
 from app.modules.detection.registry import RULES
 from app.modules.evidence.models import Evidence, EvidenceLabel, EvidenceType
 from app.modules.transactions.models import Transaction
@@ -87,6 +87,13 @@ def load_facts(
             reverses=tx.reversal_of_transaction_id,
             rail=tx.rail,
             reference=tx.reference,
+            converted=(
+                Conversion(tx.converted_amount, tx.converted_currency, tx.fx_rate)
+                if tx.converted_amount is not None
+                and tx.converted_currency is not None
+                and tx.fx_rate is not None
+                else None
+            ),
         )
         for tx in session.scalars(query)
     ]

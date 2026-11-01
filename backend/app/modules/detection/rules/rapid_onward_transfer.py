@@ -1,4 +1,8 @@
-"""RAPID_ONWARD_TRANSFER v1: funds received and sent on soon after. A heuristic for review only."""
+"""RAPID_ONWARD_TRANSFER v2: funds received and sent on soon after. A heuristic for review only.
+
+v2 also compares transfers in different currencies, but only through a converted amount and
+rate stated on one of the two records. No exchange rate is ever looked up or invented.
+"""
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
@@ -6,7 +10,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from app.modules.detection.contract import RuleHit
-from app.modules.detection.facts import TransactionFact, is_completed
+from app.modules.detection.facts import Conversion, TransactionFact, is_completed
 
 
 def _default_thresholds() -> Mapping[str, Decimal]:
@@ -19,6 +23,30 @@ class RapidOnwardTransferConfig:
     min_onward_ratio: Decimal = Decimal("0.50")
     # Per-currency minimum incoming amount. A currency with no threshold is out of scope.
     min_incoming_amount: Mapping[str, Decimal] = field(default_factory=_default_thresholds)
+
+
+@dataclass(frozen=True)
+class _Comparison:
+    """Both amounts in one currency; `converted` is the record whose stated conversion was used."""
+
+    currency: str
+    incoming: Decimal
+    outgoing: Decimal
+    converted: TransactionFact | None = None
+
+
+def _compare(inc: TransactionFact, out: TransactionFact) -> _Comparison | None:
+    if inc.currency == out.currency:
+        return _Comparison(inc.currency, inc.amount, out.amount)
+    if out.converted is not None and out.converted.currency == inc.currency:
+        return _Comparison(inc.currency, inc.amount, out.converted.amount, out)
+    if inc.converted is not None and inc.converted.currency == out.currency:
+        return _Comparison(out.currency, inc.converted.amount, out.amount, inc)
+    return None
+
+
+def _rate(conversion: Conversion) -> str:
+    return format(conversion.rate.normalize(), "f")
 
 
 def _plural(count: int, unit: str) -> str:
@@ -36,20 +64,22 @@ def describe_elapsed(seconds: int) -> str:
 
 class RapidOnwardTransfer:
     rule_id: str = "RAPID_ONWARD_TRANSFER"
-    version: str = "1"
+    version: str = "2"
     code: str = "ROT"
     title: str = "Rapid onward transfer"
     description: str = (
         "An account or beneficiary receives a completed transfer and sends a separate completed "
-        "transfer onward, in the same currency, within the configured window, for at least the "
-        "configured share of the amount received. Transfers back to the original sender are "
-        "ignored."
+        "transfer onward within the configured window, for at least the configured share of the "
+        "amount received. Transfers in different currencies are compared only through the "
+        "converted amount and rate stated on one of the two records. Transfers back to the "
+        "original sender are ignored."
     )
     required_fields: tuple[str, ...] = (
         "source",
         "destination",
         "amount",
         "currency",
+        "converted_amount, converted_currency, fx_rate (when currencies differ)",
         "occurred_at",
         "status",
         "reversal_of_transaction_id",
@@ -105,23 +135,54 @@ class RapidOnwardTransfer:
         return candidate
 
     def _qualifies(self, inc: TransactionFact, out: TransactionFact) -> bool:
-        threshold = self.config.min_incoming_amount.get(inc.currency)
+        if inc.reverses is not None:  # a reversal record returns funds; it is not new money
+            return False
+        both = _compare(inc, out)
+        if both is None:
+            return False
+        threshold = self.config.min_incoming_amount.get(both.currency)
         return (
-            inc.reverses is None  # a reversal record returns funds; it is not new incoming money
-            and inc.currency == out.currency
-            and threshold is not None
-            and inc.amount >= threshold
-            and out.amount >= inc.amount * self.config.min_onward_ratio
+            threshold is not None
+            and both.incoming >= threshold
+            and both.outgoing >= both.incoming * self.config.min_onward_ratio
         )
 
+    @staticmethod
+    def _amount(fact: TransactionFact, both: _Comparison) -> str:
+        text = f"{fact.currency} {fact.amount:.2f}"
+        if both.converted is fact and fact.converted is not None:
+            c = fact.converted
+            text += f" ({c.currency} {c.amount:.2f} at the recorded rate {_rate(c)})"
+        return text
+
     def _hit(self, inc: TransactionFact, out: TransactionFact) -> RuleHit:
+        both = _compare(inc, out)
+        if both is None:  # unreachable: only pairs that qualified get here
+            raise ValueError(f"{inc.id} and {out.id} cannot be compared")
         elapsed = int((out.occurred_at - inc.occurred_at).total_seconds())
         entity_id = out.source[1]
         explanation = (
-            f"{entity_id} received {inc.currency} {inc.amount:.2f} in {inc.id} and sent "
-            f"{out.currency} {out.amount:.2f} in {out.id} {describe_elapsed(elapsed)} later. "
+            f"{entity_id} received {self._amount(inc, both)} in {inc.id} and sent "
+            f"{self._amount(out, both)} in {out.id} {describe_elapsed(elapsed)} later. "
             "Signal for analyst review; not a finding of fraud."
         )
+        metrics = {
+            "elapsed_seconds": str(elapsed),
+            "incoming_transaction_id": inc.id,
+            "incoming_amount": f"{inc.amount:.2f}",
+            "outgoing_transaction_id": out.id,
+            "outgoing_amount": f"{out.amount:.2f}",
+            "currency": both.currency,
+        }
+        if both.converted is not None and both.converted.converted is not None:
+            conversion = both.converted.converted
+            metrics |= {
+                "incoming_currency": inc.currency,
+                "outgoing_currency": out.currency,
+                "converted_transaction_id": both.converted.id,
+                "converted_amount": f"{conversion.amount:.2f}",
+                "fx_rate": _rate(conversion),
+            }
         return RuleHit(
             rule_id=self.rule_id,
             rule_version=self.version,
@@ -131,13 +192,8 @@ class RapidOnwardTransfer:
             transaction_ids=(inc.id, out.id),
             triggered_at=out.occurred_at,
             explanation=explanation,
-            metrics={
-                "elapsed_seconds": str(elapsed),
-                "incoming_transaction_id": inc.id,
-                "incoming_amount": f"{inc.amount:.2f}",
-                "outgoing_transaction_id": out.id,
-                "outgoing_amount": f"{out.amount:.2f}",
-                "currency": out.currency,
+            metrics=metrics
+            | {
                 "window_seconds": str(int(self.config.window.total_seconds())),
                 "min_onward_ratio": f"{self.config.min_onward_ratio:.2f}",
             },
