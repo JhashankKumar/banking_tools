@@ -37,8 +37,19 @@ def test_analyst_lists_alerts_with_envelope(client: TestClient, analyst: dict[st
 
     assert response.status_code == 200
     body = response.json()
-    assert body["page"] == {"total": 1, "limit": 50, "offset": 0}
-    assert [a["id"] for a in body["data"]] == ["AL-ROT-TX-1002"]
+    assert body["page"] == {"total": 6, "limit": 50, "offset": 0}
+    assert [a["id"] for a in body["data"]] == ALL_ALERTS  # newest first
+
+
+# Every seeded alert, newest first: FR-10493, FR-10492, FR-10491 (two), FR-10489, FR-10482.
+ALL_ALERTS = [
+    "AL-ROT-TX-9302",
+    "AL-ROT-TX-9204",
+    "AL-ROT-TX-9103",
+    "AL-ROT-TX-9102",
+    "AL-ROT-TX-8906",
+    "AL-ROT-TX-1002",
+]
 
 
 @pytest.mark.parametrize(
@@ -46,7 +57,8 @@ def test_analyst_lists_alerts_with_envelope(client: TestClient, analyst: dict[st
     [
         ({"case_id": "FR-10482"}, ["AL-ROT-TX-1002"]),
         ({"case_id": "FR-10483"}, []),
-        ({"rule_id": "RAPID_ONWARD_TRANSFER"}, ["AL-ROT-TX-1002"]),
+        ({"case_id": "FR-10491"}, ["AL-ROT-TX-9103", "AL-ROT-TX-9102"]),
+        ({"rule_id": "RAPID_ONWARD_TRANSFER"}, ALL_ALERTS),
         ({"rule_id": "SOMETHING_ELSE"}, []),
     ],
 )
@@ -67,7 +79,7 @@ def test_alert_detail_matches_rule_output(client: TestClient, analyst: dict[str,
             "id": "AL-ROT-TX-1002",
             "rule": {
                 "id": "RAPID_ONWARD_TRANSFER",
-                "version": "1",
+                "version": "2",
                 "title": "Rapid onward transfer",
             },
             "entity": {"type": "beneficiary", "id": "BEN-B"},

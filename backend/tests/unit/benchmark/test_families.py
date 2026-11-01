@@ -46,6 +46,15 @@ def test_labels_follow_contract_not_rule() -> None:
         assert v.expect_alert and v.expected_pairs == {(v.facts[0].id, v.facts[1].id)}
 
 
+def test_converted_onward_is_labelled_from_its_recorded_conversion() -> None:
+    for v in _by_family(variants=10)["converted_onward"]:
+        inc, out = v.facts[0], v.facts[1]
+        assert out.currency != inc.currency
+        assert out.converted is not None and out.converted.currency == inc.currency
+        assert out.converted.amount >= inc.amount * CONFIG.min_onward_ratio
+        assert v.expect_alert and v.expected_pairs == {(inc.id, out.id)}
+
+
 def test_near_threshold_variants_exist() -> None:
     by = _by_family(variants=10)
     assert any(

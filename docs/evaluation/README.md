@@ -41,13 +41,14 @@ It asks each model the fixed questions in `app/modules/copilot/compare.py` throu
 | reversed_incoming | Incoming later undone by a reversal record | negative |
 | pending_incoming | Incoming still pending | negative |
 | failed_incoming | Incoming failed | negative |
-| currency_mismatch | INR in, USD out | negative |
+| currency_mismatch | INR in, USD out, no recorded conversion | negative |
 | onward_before_incoming | Onward timestamp earlier than the incoming one | negative |
 | benign_high_value | One large transfer, nothing sent on | negative |
+| converted_onward | INR in, USD out; the transfer records its INR cost and rate (variant 0 exactly at 50 %) | positive |
 
 ## How labels are set
 
-From the rule's written contract (`RapidOnwardTransfer.description`), never from what the rule outputs: completed transfers only, same currency, onward within the window (inclusive), onward at least the minimum share, incoming at least the per-currency threshold, transfers back to the sender ignored. Where the contract is silent we decided: a duplicated incoming record still alerts (the pair is the most recent incoming); money sent before it arrived is not "sent onward"; in a chain every qualifying hop is its own pair; the path finder's 3-hop limit truncates longer chains.
+From the rule's written contract (`RapidOnwardTransfer.description`), never from what the rule outputs: completed transfers only, same currency or a conversion recorded on one of the two transfers, onward within the window (inclusive), onward at least the minimum share, incoming at least the per-currency threshold, transfers back to the sender ignored. Where the contract is silent we decided: a duplicated incoming record still alerts (the pair is the most recent incoming); money sent before it arrived is not "sent onward"; in a chain every qualifying hop is its own pair; the path finder's 3-hop limit truncates longer chains.
 
 ## What is scored
 
