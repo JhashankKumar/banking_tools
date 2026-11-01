@@ -54,6 +54,12 @@ def _plural(count: int, unit: str) -> str:
 
 
 def describe_elapsed(seconds: int) -> str:
+    """Wording like "5 minutes 28 seconds"; from one hour on, hours and minutes only."""
+    if seconds >= 3600:
+        hours, minutes = divmod(seconds // 60, 60)
+        if minutes == 0:
+            return _plural(hours, "hour")
+        return f"{_plural(hours, 'hour')} {_plural(minutes, 'minute')}"
     minutes, rest = divmod(seconds, 60)
     if minutes == 0:
         return _plural(rest, "second")
