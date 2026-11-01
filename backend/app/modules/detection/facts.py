@@ -38,6 +38,15 @@ class TransactionFact:
     converted: Conversion | None = None  # only when the record states it; never computed here
 
 
+def amount_in(fact: TransactionFact, currency: str) -> Decimal | None:
+    """The amount in `currency`: as recorded, or as the record's own stated conversion."""
+    if fact.currency == currency:
+        return fact.amount
+    if fact.converted is not None and fact.converted.currency == currency:
+        return fact.converted.amount
+    return None
+
+
 def is_completed(fact: TransactionFact) -> bool:
     """Completed and not undone by a later reversal record."""
     return fact.status in COMPLETED_STATUSES and not fact.reversed_by

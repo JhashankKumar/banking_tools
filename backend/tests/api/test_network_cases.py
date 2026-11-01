@@ -43,9 +43,16 @@ def _alerts(db_session: Session, case_id: str) -> dict[str, tuple[str, ...]]:
         (
             "FR-10489",
             [f"TX-890{i}" for i in range(1, 7)],
-            {"AL-ROT-TX-8906": ("TX-8905", "TX-8906")},
+            {
+                "AL-ROT-TX-8906": ("TX-8905", "TX-8906"),
+                "AL-FIC-TX-8906": tuple(f"TX-890{i}" for i in range(1, 7)),
+            },
         ),
-        ("FR-10490", [f"TX-900{i}" for i in range(1, 7)], {}),
+        (
+            "FR-10490",
+            [f"TX-900{i}" for i in range(1, 7)],
+            {"AL-FOS-TX-9006": tuple(f"TX-900{i}" for i in range(1, 7))},
+        ),
         (
             "FR-10491",
             ["TX-9101", "TX-9102", "TX-9103"],
@@ -60,6 +67,12 @@ def _alerts(db_session: Session, case_id: str) -> dict[str, tuple[str, ...]]:
             {"AL-ROT-TX-9204": ("TX-9202", "TX-9204")},
         ),
         ("FR-10493", ["TX-9301", "TX-9302"], {"AL-ROT-TX-9302": ("TX-9301", "TX-9302")}),
+        (
+            "FR-10494",
+            [f"TX-940{i}" for i in range(1, 7)],
+            {"AL-FOS-TX-9406": tuple(f"TX-940{i}" for i in range(1, 7))},
+        ),
+        ("FR-10495", [f"TX-950{i}" for i in range(1, 8)], {}),
     ],
 )
 def test_network_case_records_and_alerts(

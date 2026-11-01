@@ -67,9 +67,13 @@ body {
   font-family: var(--font-inter), system-ui, sans-serif;
 }
 
-:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+/* In the base layer so utilities such as `outline-none` can override it: inputs inside a
+   Field show the wrapper's focus ring instead of a second, inner outline. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
 }
 
 /* Login brand panel gradient (deep trust blue). */

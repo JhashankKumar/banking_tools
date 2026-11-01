@@ -733,6 +733,100 @@ def fr_10493() -> Scenario:
     )
 
 
+def fr_10494() -> Scenario:
+    """Benign look-alike: a company is paid, then runs payroll within 20 minutes. FAN_OUT_SPLIT
+    fires (80 % sent on in five transfers); its payroll caveat is what the analyst weighs."""
+    salary: dict[str, object] = {"description": "Monthly salary"}
+    return _network_case(
+        "FR-10494",
+        "Company funding, then same-day payroll",
+        _ist(2026, 9, 26, 12, 0),
+        [
+            (
+                "TX-9401",
+                "ACC-940",
+                "ACC-941",
+                "500000.00",
+                _ist(2026, 9, 26, 9, 0, 0),
+                "NEFT",
+                {"description": "Client invoice settlement"},
+            ),
+            (
+                "TX-9402",
+                "ACC-941",
+                "ACC-942",
+                "85000.00",
+                _ist(2026, 9, 26, 9, 5, 0),
+                "NEFT",
+                salary,
+            ),
+            (
+                "TX-9403",
+                "ACC-941",
+                "ACC-943",
+                "82000.00",
+                _ist(2026, 9, 26, 9, 8, 0),
+                "NEFT",
+                salary,
+            ),
+            (
+                "TX-9404",
+                "ACC-941",
+                "ACC-944",
+                "80000.00",
+                _ist(2026, 9, 26, 9, 12, 0),
+                "NEFT",
+                salary,
+            ),
+            (
+                "TX-9405",
+                "ACC-941",
+                "ACC-945",
+                "78000.00",
+                _ist(2026, 9, 26, 9, 16, 0),
+                "NEFT",
+                salary,
+            ),
+            (
+                "TX-9406",
+                "ACC-941",
+                "ACC-946",
+                "79000.00",
+                _ist(2026, 9, 26, 9, 20, 0),
+                "NEFT",
+                salary,
+            ),
+        ],
+    )
+
+
+def fr_10495() -> Scenario:
+    """Benign look-alike: a merchant collects six UPI payments and settles to its bank account
+    three hours later. Outside every rule's window, so no alert."""
+    return _network_case(
+        "FR-10495",
+        "Merchant collections, settled hours later",
+        _ist(2026, 9, 27, 23, 0),
+        [
+            ("TX-9501", "ACC-951", "BEN-M95", "4500.00", _ist(2026, 9, 27, 19, 0, 0), "UPI", {}),
+            ("TX-9502", "ACC-952", "BEN-M95", "6200.00", _ist(2026, 9, 27, 19, 4, 0), "UPI", {}),
+            ("TX-9503", "ACC-953", "BEN-M95", "3800.00", _ist(2026, 9, 27, 19, 9, 0), "UPI", {}),
+            ("TX-9504", "ACC-954", "BEN-M95", "5500.00", _ist(2026, 9, 27, 19, 15, 0), "UPI", {}),
+            ("TX-9505", "ACC-955", "BEN-M95", "7000.00", _ist(2026, 9, 27, 19, 20, 0), "UPI", {}),
+            ("TX-9506", "ACC-956", "BEN-M95", "4000.00", _ist(2026, 9, 27, 19, 25, 0), "UPI", {}),
+            (
+                "TX-9507",
+                "BEN-M95",
+                "ACC-957",
+                "30200.00",
+                _ist(2026, 9, 27, 22, 30, 0),
+                "IMPS",
+                {"description": "Merchant settlement"},
+            ),
+        ],
+    )
+
+
 def all_scenarios() -> list[Scenario]:
     return [
         fr_10482(),
@@ -746,4 +840,6 @@ def all_scenarios() -> list[Scenario]:
         fr_10491(),
         fr_10492(),
         fr_10493(),
+        fr_10494(),
+        fr_10495(),
     ]

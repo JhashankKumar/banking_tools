@@ -37,19 +37,25 @@ def test_analyst_lists_alerts_with_envelope(client: TestClient, analyst: dict[st
 
     assert response.status_code == 200
     body = response.json()
-    assert body["page"] == {"total": 6, "limit": 50, "offset": 0}
+    assert body["page"] == {"total": 10, "limit": 50, "offset": 0}
     assert [a["id"] for a in body["data"]] == ALL_ALERTS  # newest first
 
 
-# Every seeded alert, newest first: FR-10493, FR-10492, FR-10491 (two), FR-10489, FR-10482.
+# Every seeded alert, newest first (ties on time by ID): FR-10494, FR-10493, FR-10492,
+# FR-10491 (two), FR-10490, FR-10489 (two rules, same trigger), FR-10484, FR-10482.
 ALL_ALERTS = [
+    "AL-FOS-TX-9406",
     "AL-ROT-TX-9302",
     "AL-ROT-TX-9204",
     "AL-ROT-TX-9103",
     "AL-ROT-TX-9102",
+    "AL-FOS-TX-9006",
+    "AL-FIC-TX-8906",
     "AL-ROT-TX-8906",
+    "AL-CIR-TX-4003",
     "AL-ROT-TX-1002",
 ]
+ROT_ALERTS = [a for a in ALL_ALERTS if a.startswith("AL-ROT-")]
 
 
 @pytest.mark.parametrize(
@@ -58,7 +64,12 @@ ALL_ALERTS = [
         ({"case_id": "FR-10482"}, ["AL-ROT-TX-1002"]),
         ({"case_id": "FR-10483"}, []),
         ({"case_id": "FR-10491"}, ["AL-ROT-TX-9103", "AL-ROT-TX-9102"]),
-        ({"rule_id": "RAPID_ONWARD_TRANSFER"}, ALL_ALERTS),
+        ({"rule_id": "RAPID_ONWARD_TRANSFER"}, ROT_ALERTS),
+        ({"rule_id": "FAN_OUT_SPLIT"}, ["AL-FOS-TX-9406", "AL-FOS-TX-9006"]),
+        ({"rule_id": "FAN_IN_COLLECT"}, ["AL-FIC-TX-8906"]),
+        ({"rule_id": "CIRCULAR_FLOW"}, ["AL-CIR-TX-4003"]),
+        ({"case_id": "FR-10489"}, ["AL-FIC-TX-8906", "AL-ROT-TX-8906"]),
+        ({"case_id": "FR-10495"}, []),
         ({"rule_id": "SOMETHING_ELSE"}, []),
     ],
 )

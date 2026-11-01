@@ -32,16 +32,59 @@ function renderPanel(onSaveAsNote = vi.fn()) {
 
 const barButton = () => screen.getByTestId("copilot-bar-button");
 
+const SECOND_CHAT = {
+  ...CHAT_SUMMARY_JSON,
+  id: "c0ffee00-0000-4000-8000-000000000002",
+  title: "Second look at TX-1002",
+  message_count: 4,
+};
+
 describe("CopilotPanel", () => {
+  test("a case with exactly one chat opens it by default; ‹ Chats shows the list", async () => {
+    stubFetch({
+      [`${CHATS}/`]: () => jsonResponse({ data: CHAT_JSON }),
+      [CHATS]: () => jsonResponse(page([CHAT_SUMMARY_JSON])),
+    });
+    renderPanel();
+    const user = userEvent.setup();
+
+    expect(
+      await screen.findByRole("article", { name: "Copilot answer" }),
+    ).toBeVisible();
+    expect(barButton()).toHaveTextContent("‹ Chats");
+
+    // Back to the list stays on the list: the auto-open happens once, on first load.
+    await user.click(barButton());
+    expect(barButton()).toHaveTextContent("+ New chat");
+    expect(screen.getByText(/FR-10482 · 1 chat/)).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /Where did the money go\?/ }),
+    ).toBeVisible();
+  });
+
+  test("a case with several chats starts on the list", async () => {
+    stubFetch({
+      [CHATS]: () => jsonResponse(page([CHAT_SUMMARY_JSON, SECOND_CHAT])),
+    });
+    renderPanel();
+
+    expect(await screen.findByText("Second look at TX-1002")).toBeVisible();
+    expect(screen.getByText("Where did the money go?")).toBeVisible();
+    expect(barButton()).toHaveTextContent("+ New chat");
+    expect(screen.queryByRole("log", { name: "Conversation" })).toBeNull();
+  });
+
   test("button toggles between New chat and Chats", async () => {
-    stubFetch({ [CHATS]: () => jsonResponse(page([CHAT_SUMMARY_JSON])) });
+    stubFetch({
+      [CHATS]: () => jsonResponse(page([CHAT_SUMMARY_JSON, SECOND_CHAT])),
+    });
     renderPanel();
     const user = userEvent.setup();
 
     expect(await screen.findByText("Where did the money go?")).toBeVisible();
     expect(screen.getByText(/· 2 messages$/)).toBeVisible();
     expect(barButton()).toHaveTextContent("+ New chat");
-    expect(screen.getByText(/FR-10482 · 1 chat/)).toBeVisible();
+    expect(screen.getByText(/FR-10482 · 2 chats/)).toBeVisible();
 
     await user.click(barButton());
     expect(barButton()).toHaveTextContent("‹ Chats");
@@ -86,17 +129,12 @@ describe("CopilotPanel", () => {
     expect(barButton()).toHaveTextContent("‹ Chats");
   });
 
-  test("opening a chat shows cited answer sections", async () => {
+  test("the only chat opens by default with cited answer sections", async () => {
     stubFetch({
       [`${CHATS}/`]: () => jsonResponse({ data: CHAT_JSON }),
       [CHATS]: () => jsonResponse(page([CHAT_SUMMARY_JSON])),
     });
     renderPanel();
-    const user = userEvent.setup();
-
-    await user.click(
-      await screen.findByRole("button", { name: /Where did the money go\?/ }),
-    );
 
     const answer = await screen.findByRole("article", {
       name: "Copilot answer",
@@ -126,11 +164,7 @@ describe("CopilotPanel", () => {
       [CHATS]: () => jsonResponse(page([CHAT_SUMMARY_JSON])),
     });
     renderPanel();
-    const user = userEvent.setup();
 
-    await user.click(
-      await screen.findByRole("button", { name: /Where did the money go\?/ }),
-    );
     await screen.findByRole("article", { name: "Copilot answer" });
 
     const log = screen.getByRole("log", { name: "Conversation" });
@@ -173,9 +207,6 @@ describe("CopilotPanel", () => {
     const onSave = vi.fn();
     renderPanel(onSave);
     const user = userEvent.setup();
-    await user.click(
-      await screen.findByRole("button", { name: /Where did the money go\?/ }),
-    );
 
     await user.click(
       await screen.findByRole("button", { name: "Save as case note" }),
@@ -208,11 +239,6 @@ describe("CopilotPanel", () => {
       [CHATS]: () => jsonResponse(page([CHAT_SUMMARY_JSON])),
     });
     renderPanel();
-    const user = userEvent.setup();
-
-    await user.click(
-      await screen.findByRole("button", { name: /Where did the money go\?/ }),
-    );
 
     expect(
       await screen.findByText("I can't help with customer details."),
@@ -240,12 +266,6 @@ describe("CopilotPanel", () => {
         jsonResponse(page([{ ...CHAT_SUMMARY_JSON, is_own: false }])),
     });
     renderPanel();
-    const user = userEvent.setup();
-
-    expect(await screen.findByText(/· analyst\.demo/)).toBeVisible();
-    await user.click(
-      screen.getByRole("button", { name: /Where did the money go\?/ }),
-    );
 
     expect(
       await screen.findByText("Read-only: analyst.demo's chat."),

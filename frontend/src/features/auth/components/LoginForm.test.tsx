@@ -53,6 +53,39 @@ describe("LoginForm", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("req-42");
   });
 
+  test("clears username and password after a successful sign-in", async () => {
+    // Next keeps this route mounted (hidden) after navigating away, so whatever the form
+    // still holds reappears on sign-out — and the password would sit in memory meanwhile.
+    stubLogin(new Response(null, { status: 204 }));
+    renderWithClient(<LoginForm />);
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "Show password" }));
+    await fill("analyst.demo", "a-good-password");
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalled());
+    expect(screen.getByLabelText("Username")).toHaveValue("");
+    expect(screen.getByLabelText("Password")).toHaveValue("");
+    expect(screen.getByLabelText("Password")).toHaveAttribute(
+      "type",
+      "password",
+    );
+  });
+
+  test("keeps what was typed after a failed sign-in", async () => {
+    stubLogin(
+      apiError("AUTH_INVALID_CREDENTIALS", 401, {
+        message: "Invalid username or password",
+      }),
+    );
+    renderWithClient(<LoginForm />);
+
+    await fill("analyst.demo", "wrong-password");
+
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText("Username")).toHaveValue("analyst.demo");
+  });
+
   test("redirects to next path on success", async () => {
     navigation.search = "next=%2Fcases%2FFR-10482";
     stubLogin(new Response(null, { status: 204 }));
