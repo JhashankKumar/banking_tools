@@ -4,8 +4,17 @@
 
 An open-source AI copilot for fraud investigation, transaction graph analysis, and evidence-grounded financial-crime workflows.
 
-> **Status: Milestones 0–7 complete.** Detection rules (including cross-currency transfers compared through recorded conversions), money paths, the investigator UI, an evidence-grounded AI copilot with supervisor-reviewed case notes, in-app safety checks and a reproducible benchmark. See the [implementation plan](docs/project/IMPLEMENTATION_PLAN.md) and the [demo script](docs/DEMO.md).
->
+**What it does:**
+
+- **Deterministic detection rules**: rapid onward transfer, fan-out split, fan-in collect and circular flow, with cross-currency transfers compared only through recorded conversions.
+- **Money paths**: trace funds across accounts and see them on an interactive transaction graph.
+- **Investigator UI**: alerts, cases, evidence and a "why it fired" explanation for every alert.
+- **Evidence-grounded AI copilot**: answers cite case evidence, decline customer-information questions, and draft case notes that a supervisor reviews (four-eyes).
+- **In-app safety checks**: scripted attacks run against the real defences.
+- **Reproducible benchmark**: labelled synthetic scenarios with published, seed-stable results.
+
+See the [demo script](docs/DEMO.md) for a guided walkthrough.
+
 > **Synthetic data only.** This is a demonstration project. Never load real customer or bank data. It is not production-ready and makes no compliance or fraud-accuracy claims.
 
 ![Case FR-10482: why the alert fired, the money-flow graph and the evidence](docs/images/case-graph.png)
@@ -122,21 +131,23 @@ If sign-in fails, the users may have been seeded with an older `OFI_DEMO_PASSWOR
 
 ## What's in the seeded data
 
-Eleven synthetic cases, described in full in the [synthetic casebook](docs/banking-domain/SYNTHETIC_CASEBOOK.md). Detection raises 6 alerts.
+Thirteen synthetic cases, described in full in the [synthetic casebook](docs/banking-domain/SYNTHETIC_CASEBOOK.md). Four deterministic rules ([detection rules](docs/project/DETECTION_RULES.md)) raise 10 alerts: rapid onward transfer (ROT), fan-out split (FOS), fan-in collect (FIC) and circular flow (CIR).
 
 | Case | Pattern | Alerts |
 |---|---|---|
 | FR-10482 | Rapid onward transfer ACC-001 → BEN-B → ACC-C | `AL-ROT-TX-1002` |
 | FR-10483 | Large scheduled supplier payment | none |
-| FR-10484 | Funds return to the sender, hours apart | none |
+| FR-10484 | Funds return to the sender, hours apart | `AL-CIR-TX-4003` |
 | FR-10485 | Transfer later reversed | none |
 | FR-10486 | Instruction-like text in a transaction description | none |
 | FR-10488 | No authoritative settlement status | none |
-| FR-10489 | Fan-in: five payers, then sent on | `AL-ROT-TX-8906` |
-| FR-10490 | Fan-out: a large credit split into five smaller transfers | none (a known blind spot) |
+| FR-10489 | Fan-in: five payers, then sent on | `AL-ROT-TX-8906`, `AL-FIC-TX-8906` |
+| FR-10490 | Fan-out: a large credit split into five smaller transfers | `AL-FOS-TX-9006` (silent for ROT) |
 | FR-10491 | Fast three-hop chain | `AL-ROT-TX-9102`, `AL-ROT-TX-9103` |
 | FR-10492 | Busy account: salary, a failed attempt, pending and rent, one pass-through | `AL-ROT-TX-9204` |
 | FR-10493 | INR in, sent abroad in USD with a recorded conversion | `AL-ROT-TX-9302` |
+| FR-10494 | Benign look-alike: company funding, then same-day payroll | `AL-FOS-TX-9406` (the payroll caveat applies) |
+| FR-10495 | Benign look-alike: merchant collections settled hours later | none |
 
 Transfers in different currencies are compared only through the converted amount and rate recorded on the transfer, never an assumed exchange rate ([detection rules](docs/project/DETECTION_RULES.md)).
 
@@ -243,7 +254,7 @@ Fix formatting with `uv run ruff format .` (backend) and `pnpm format` (frontend
 ```text
 frontend/             Next.js frontend (TypeScript, Tailwind, Vitest)
 backend/              FastAPI backend (Pydantic, SQLAlchemy, Alembic, pytest, ruff, pyright)
-docs/project/         Product brief, architecture, engineering principles, plan
+docs/project/         Product brief, architecture, engineering principles
 docs/banking-domain/  Banking and fraud-investigation domain context, synthetic casebook
 docs/decisions/       Architecture decision records
 docs/evaluation/      Benchmark method and published results

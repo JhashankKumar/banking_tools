@@ -1,6 +1,6 @@
 # Evaluation
 
-A reproducible benchmark of the deterministic parts of OpenFraud Investigator: the detection rule, the money-path finder, and the copilot's answer validator. It uses generated synthetic data only, no database and no model.
+A reproducible benchmark of the deterministic parts of OpenFraud Investigator: the RAPID_ONWARD_TRANSFER detection rule, the money-path finder, and the copilot's answer validator. The other rules (fan-out split, fan-in collect, circular flow) are covered by unit tests and the seeded casebook, not yet by the benchmark. It uses generated synthetic data only, no database and no model.
 
 Published results: [results/RESULTS.md](results/RESULTS.md) (tables) and [results/results.json](results/results.json) (every number).
 
