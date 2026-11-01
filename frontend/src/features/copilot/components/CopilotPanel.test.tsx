@@ -119,6 +119,52 @@ describe("CopilotPanel", () => {
     ).toBeVisible();
   });
 
+  test("an opened chat sits scrolled to its newest message, above a pinned ask box", async () => {
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(800);
+    stubFetch({
+      [`${CHATS}/`]: () => jsonResponse({ data: CHAT_JSON }),
+      [CHATS]: () => jsonResponse(page([CHAT_SUMMARY_JSON])),
+    });
+    renderPanel();
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole("button", { name: /Where did the money go\?/ }),
+    );
+    await screen.findByRole("article", { name: "Copilot answer" });
+
+    const log = screen.getByRole("log", { name: "Conversation" });
+    await waitFor(() => expect(log.scrollTop).toBe(800));
+    expect(log).not.toContainElement(
+      screen.getByPlaceholderText("Ask a follow-up…"),
+    );
+    vi.restoreAllMocks();
+  });
+
+  test("a new answer scrolls the conversation to the bottom", async () => {
+    stubFetch({
+      [`${CHATS}/`]: () => jsonResponse({ data: CHAT_JSON }),
+      [CHATS]: () => jsonResponse(page([])),
+      [ASK]: () => askReply(ANSWER_JSON),
+    });
+    renderPanel();
+    const user = userEvent.setup();
+
+    await user.click(barButton());
+    const log = screen.getByRole("log", { name: "Conversation" });
+    log.scrollTop = 0;
+    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(
+      1200,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Why did the alert fire?" }),
+    );
+    await screen.findByRole("article", { name: "Copilot answer" });
+
+    await waitFor(() => expect(log.scrollTop).toBe(1200));
+    vi.restoreAllMocks();
+  });
+
   test("save as case note passes the answer and message id", async () => {
     stubFetch({
       [`${CHATS}/`]: () => jsonResponse({ data: CHAT_JSON }),

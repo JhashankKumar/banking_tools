@@ -31,7 +31,8 @@ REVERSAL = (
 )
 HOP_LIMIT = "Path stops at the hop limit; further onward transfers may exist."
 MIXED_CURRENCY = (
-    "Amounts are in different currencies and are not comparable without an exchange rate."
+    "Amounts are in different currencies and are shown as recorded. Compare them only through a "
+    "conversion recorded on a transfer (shown on its alert), never an assumed rate."
 )
 CYCLE = "Funds return to the starting party; a loop alone does not indicate wrongdoing."
 RETURNED_BY_REVERSAL = "Funds returned to the sender by a reversal; this is not a circular flow."

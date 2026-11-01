@@ -8,6 +8,7 @@ type Params = Record<string, string | number | undefined>;
 interface RequestOptions {
   signal?: AbortSignal;
   params?: Params;
+  timeoutMs?: number;
 }
 
 function buildUrl(base: string, path: string, params?: Params): string {
@@ -48,13 +49,10 @@ async function request<S extends z.ZodType>(
   method: "GET" | "POST" | "PATCH",
   path: string,
   schema: S,
-  { signal, params }: RequestOptions = {},
+  { signal, params, timeoutMs = REQUEST_TIMEOUT_MS }: RequestOptions = {},
   body?: unknown,
 ): Promise<z.output<S>> {
-  const signals = [
-    AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    ...(signal ? [signal] : []),
-  ];
+  const signals = [AbortSignal.timeout(timeoutMs), ...(signal ? [signal] : [])];
   const headers = new Headers({ Accept: "application/json" });
   if (body !== undefined) headers.set("Content-Type", "application/json");
   let response: Response;

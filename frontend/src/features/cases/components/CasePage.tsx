@@ -110,7 +110,8 @@ function CaseBody({ caseId, data }: { caseId: string; data: CasePageData }) {
   ].sort((a, b) => a.id.localeCompare(b.id));
 
   return (
-    <div className="flex gap-4 px-6 pb-7">
+    // Fills the screen under the header; side columns and the middle scroll on their own.
+    <div className="flex min-h-[32rem] flex-1 gap-4 px-6 pb-7">
       <CollapsibleColumn
         side="left"
         label="case context"
@@ -118,6 +119,7 @@ function CaseBody({ caseId, data }: { caseId: string; data: CasePageData }) {
         open={selection.leftOpen}
         onToggle={selection.setLeftOpen}
         width="w-80"
+        className="overflow-y-auto [&>*]:shrink-0"
       >
         {alerts.map((a) => (
           <WhyItFiredCard
@@ -131,7 +133,7 @@ function CaseBody({ caseId, data }: { caseId: string; data: CasePageData }) {
           items={selectedPath?.limitations ?? [DATASET_LIMITATION]}
         />
       </CollapsibleColumn>
-      <div className="flex min-w-0 flex-1 flex-col gap-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto [&>*]:shrink-0">
         <MoneyFlowCard data={data} />
         <QueryView
           query={data.transactionsQuery}

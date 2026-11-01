@@ -134,6 +134,13 @@ def collect_tool_values(results: Sequence[ToolResult]) -> set[str]:
     return keys
 
 
+# Models write non-breaking spaces and hyphens ("5\u202fm", "TX\u20111001"); without this a value
+# or record ID written that way would escape every check below.
+_PLAIN = str.maketrans(
+    dict.fromkeys("\u00a0\u2007\u2009\u202f", " ") | dict.fromkeys("\u2010\u2011\u2012", "-")
+)
+
+
 def _texts(answer: CopilotAnswer) -> Iterable[str]:
     yield from (i.text for i in answer.records)
     yield from (i.text for i in answer.calculated)
@@ -183,7 +190,7 @@ def validate_answer(
             "calculated": clean(answer.calculated, require_citation=False),
         }
     )
-    texts = list(_texts(cleaned))
+    texts = [text.translate(_PLAIN) for text in _texts(cleaned)]
     problems = [
         f"Wording not allowed (a conclusion the records cannot support): {m.group(0)}"
         for text in texts

@@ -16,10 +16,22 @@ function metricTiles(alert: Alert): [string, string][] {
     tiles.push(["Elapsed", formatElapsed(Number(m.elapsed_seconds))]);
   if (m.window_seconds)
     tiles.push(["Window", formatElapsed(Number(m.window_seconds))]);
-  if (m.incoming_amount && m.currency)
-    tiles.push(["In", formatMoney(m.incoming_amount, m.currency)]);
-  if (m.outgoing_amount && m.currency)
-    tiles.push(["Out", formatMoney(m.outgoing_amount, m.currency)]);
+  // `currency` is the one the rule compared in; each amount keeps its own when they differ.
+  const inCurrency = m.incoming_currency ?? m.currency;
+  const outCurrency = m.outgoing_currency ?? m.currency;
+  if (m.incoming_amount && inCurrency)
+    tiles.push(["In", formatMoney(m.incoming_amount, inCurrency)]);
+  if (m.outgoing_amount && outCurrency)
+    tiles.push(["Out", formatMoney(m.outgoing_amount, outCurrency)]);
+  if (m.converted_amount && m.currency && m.fx_rate) {
+    const side =
+      m.converted_transaction_id === m.incoming_transaction_id ? "In" : "Out";
+    tiles.push([
+      `${side} in ${m.currency}`,
+      formatMoney(m.converted_amount, m.currency),
+    ]);
+    tiles.push(["Rate", `${m.fx_rate} (recorded)`]);
+  }
   return tiles;
 }
 

@@ -202,6 +202,29 @@ def test_same_values_in_other_forms_pass(text: str) -> None:
     assert _problems_for(text, PAYLOAD) == []
 
 
+# Models often write non-breaking spaces and hyphens ("5\u202fm", "TX\u20114242").
+@pytest.mark.parametrize(
+    "text",
+    [
+        "It took 9\u202fminutes.",
+        "Sent on 6\u00a0m 28\u00a0s later.",
+        "TX\u20114242 also moved money.",
+        "See EV\u201199999\u2011X1.",
+    ],
+)
+def test_non_ascii_spaces_and_hyphens_do_not_hide_values(text: str) -> None:
+    assert _problems_for(text, PAYLOAD) != []
+
+
+def test_non_ascii_spaces_and_hyphens_still_match_real_values() -> None:
+    assert (
+        _problems_for(
+            "EV\u201110482\u2011TX\u20111001: the rule window is 30\u202fminutes.", PAYLOAD
+        )
+        == []
+    )
+
+
 def test_values_inside_untrusted_text_do_not_ground_an_answer() -> None:
     payload: dict[str, object] = {"description": {"untrusted_text": "Pay 99999.00 now"}}
 

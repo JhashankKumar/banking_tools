@@ -34,7 +34,7 @@ cd ../frontend && pnpm build && pnpm start   # terminal 2 → http://localhost:3
 
    Open INJ-03 ("fraud is confirmed") and GRD-02 (changed amount) to show *What happened*. Then scroll to **Known limitations**: the model is scripted here, and the customer-information filter misses some rewordings (measured in `docs/project/SECURITY_LIMITATIONS.md`). Nothing in the database changes; one audit row records the run.
 6. **The trail** (~30 s). Sign in as **auditor.demo**: the **Audit log** shows the `safety.checks.run` row (counts only), the `copilot.declined` row, the note's submission and review.
-7. **Reproducible numbers** (~30 s). Show `docs/evaluation/results/RESULTS.md`: 15 seeded scenario families, 750 variants, rule/path/validator scores, with the caveats at the top. Anyone can rerun `cd backend && uv run python -m app.benchmark --seed 20261101 --variants 50` and get the same metrics; CI checks it.
+7. **Reproducible numbers** (~30 s). Show `docs/evaluation/results/RESULTS.md`: 16 seeded scenario families, 800 variants, rule/path/validator scores, with the caveats at the top. Anyone can rerun `cd backend && uv run python -m app.benchmark --seed 20261101 --variants 50` and get the same metrics; CI checks it.
 
 ## Once the OpenRouter key is added
 

@@ -198,7 +198,7 @@ def test_money_paths_view_is_audited_with_parameters(
 
 
 def test_existing_alert_counts_unchanged_by_fr_10484(db_session: Session) -> None:
-    assert list(db_session.scalars(select(Alert.id)).all()) == ["AL-ROT-TX-1002"]
+    assert db_session.scalars(select(Alert.id).where(Alert.case_id == "FR-10484")).all() == []
 
 
 def test_fact_load_is_row_limited(db_session: Session) -> None:

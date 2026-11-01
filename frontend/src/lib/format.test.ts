@@ -13,6 +13,10 @@ describe("format", () => {
     expect(formatMoney("950000.00", "INR")).toBe("₹9,50,000.00");
   });
 
+  test("other currencies show their code, never an ambiguous symbol", () => {
+    expect(formatMoney("1000.00", "USD")).toBe("USD\u00a01,000.00");
+  });
+
   test("does not throw for the no-currency code", () => {
     expect(() => formatMoney("1200.00", "XXX")).not.toThrow();
   });

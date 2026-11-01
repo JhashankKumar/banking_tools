@@ -69,7 +69,7 @@ Done 2026-10-30 (spec `docs/specs/2026-10-30-milestones-6-7-safety-and-benchmark
 Acceptance: a new contributor can reproduce the demo and evaluation from scratch.
 
 Done 2026-10-30/31:
-- `python -m app.benchmark`: 15 seeded synthetic scenario families labelled from the rule's contract; rule, path and answer-validator scores; published in `docs/evaluation/results/` with caveats; CI checks they reproduce.
+- `python -m app.benchmark`: 16 seeded synthetic scenario families labelled from the rule's contract; rule, path and answer-validator scores; published in `docs/evaluation/results/` with caveats; CI checks they reproduce.
 - README screenshots and sections, `docs/DEMO.md`, issue and PR templates, updated CONTRIBUTING, drafted `FIRST_ISSUES.md`.
 - Pending the owner's key: the live-model section (`--live`) and the M5 model comparison.
 

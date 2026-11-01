@@ -14,6 +14,15 @@ COMPLETED_STATUSES = frozenset({TransactionStatus.POSTED, TransactionStatus.SETT
 
 
 @dataclass(frozen=True)
+class Conversion:
+    """The amount in another currency stated by the source record, and the rate it applied."""
+
+    amount: Decimal
+    currency: str
+    rate: Decimal
+
+
+@dataclass(frozen=True)
 class TransactionFact:
     id: str
     source: PartyKey
@@ -26,6 +35,7 @@ class TransactionFact:
     reverses: str | None = None  # set when this record is itself a reversal of another
     rail: str | None = None
     reference: str | None = None
+    converted: Conversion | None = None  # only when the record states it; never computed here
 
 
 def is_completed(fact: TransactionFact) -> bool:

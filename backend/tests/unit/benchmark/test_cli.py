@@ -77,3 +77,12 @@ def test_report_does_not_claim_a_commit(tmp_path: Path) -> None:
 
     assert "git_sha" not in report["meta"]
     assert "code `" not in (tmp_path / "RESULTS.md").read_text()
+
+
+def test_report_names_the_rule_version_in_use() -> None:
+    from app.benchmark.report import build_report
+    from app.modules.detection.rules.rapid_onward_transfer import RapidOnwardTransfer
+
+    report = build_report(20261101, 1)
+
+    assert report["parameters"]["rule"] == f"RAPID_ONWARD_TRANSFER v{RapidOnwardTransfer.version}"

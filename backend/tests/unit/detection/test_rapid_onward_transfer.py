@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.modules.detection.facts import PartyKey, TransactionFact
+from app.modules.detection.facts import Conversion, PartyKey, TransactionFact
 from app.modules.detection.rules.rapid_onward_transfer import RapidOnwardTransfer, describe_elapsed
 from app.modules.transactions.models import TransactionStatus
 
@@ -25,6 +25,7 @@ def fact(
     status: TransactionStatus = TransactionStatus.SETTLED,
     reversed_by: tuple[str, ...] = (),
     reverses: str | None = None,
+    converted: Conversion | None = None,
 ) -> TransactionFact:
     return TransactionFact(
         id=tx_id,
@@ -36,6 +37,7 @@ def fact(
         status=status,
         reversed_by=reversed_by,
         reverses=reverses,
+        converted=converted,
     )
 
 
@@ -71,7 +73,7 @@ def test_fr_10482_triggers_with_exact_metrics_and_explanation() -> None:
     [hit] = RapidOnwardTransfer().evaluate([incoming(), outgoing()])
 
     assert hit.rule_id == "RAPID_ONWARD_TRANSFER"
-    assert hit.rule_version == "1"
+    assert hit.rule_version == "2"
     assert hit.rule_code == "ROT"
     assert hit.entity == BEN_B
     assert hit.trigger_transaction_id == "TX-1002"
@@ -117,8 +119,83 @@ def test_incoming_with_reversal_record_does_not_trigger() -> None:
     assert hits(incoming(reversed_by=("TX-R1",)), outgoing()) == []
 
 
-def test_different_currencies_do_not_trigger() -> None:
+def test_different_currencies_without_a_recorded_rate_do_not_trigger() -> None:
     assert hits(incoming(), outgoing(currency="USD")) == []
+
+
+def usd_out(amount_inr: str, rate: str = "83.45") -> TransactionFact:
+    """BEN-B sends USD 500.00; the record states what that cost in INR at the rate applied."""
+    return outgoing(
+        amount="500.00",
+        currency="USD",
+        converted=Conversion(Decimal(amount_inr), "INR", Decimal(rate)),
+    )
+
+
+def test_onward_in_another_currency_triggers_on_its_recorded_conversion() -> None:
+    [hit] = RapidOnwardTransfer().evaluate([incoming(), usd_out("41725.00")])
+
+    assert hit.transaction_ids == ("TX-1001", "TX-1002")
+    assert dict(hit.metrics) == {
+        "elapsed_seconds": "328",
+        "incoming_transaction_id": "TX-1001",
+        "incoming_amount": "48500.00",
+        "incoming_currency": "INR",
+        "outgoing_transaction_id": "TX-1002",
+        "outgoing_amount": "500.00",
+        "outgoing_currency": "USD",
+        "currency": "INR",
+        "converted_transaction_id": "TX-1002",
+        "converted_amount": "41725.00",
+        "fx_rate": "83.45",
+        "window_seconds": "1800",
+        "min_onward_ratio": "0.50",
+    }
+    assert hit.explanation == (
+        "BEN-B received INR 48500.00 in TX-1001 and sent USD 500.00 (INR 41725.00 at the "
+        "recorded rate 83.45) in TX-1002 5 minutes 28 seconds later. "
+        "Signal for analyst review; not a finding of fraud."
+    )
+
+
+def test_converted_onward_below_ratio_does_not_trigger() -> None:
+    assert hits(incoming(), usd_out("24249.99")) == []
+
+
+def test_incoming_in_another_currency_triggers_on_its_recorded_conversion() -> None:
+    usd_in = incoming(
+        amount="600.00",
+        currency="USD",
+        converted=Conversion(Decimal("50070.00"), "INR", Decimal("83.45")),
+    )
+
+    [hit] = RapidOnwardTransfer().evaluate([usd_in, outgoing()])
+
+    assert hit.metrics["converted_transaction_id"] == "TX-1001"
+    assert hit.metrics["currency"] == "INR"
+    assert "received USD 600.00 (INR 50070.00 at the recorded rate 83.45) in TX-1001" in (
+        hit.explanation
+    )
+
+
+def test_converted_incoming_below_threshold_does_not_trigger() -> None:
+    usd_in = incoming(
+        amount="100.00",
+        currency="USD",
+        converted=Conversion(Decimal("8345.00"), "INR", Decimal("83.45")),
+    )
+
+    assert hits(usd_in, outgoing(amount="8000.00")) == []
+
+
+def test_conversion_into_a_third_currency_does_not_trigger() -> None:
+    eur_out = outgoing(
+        amount="500.00",
+        currency="USD",
+        converted=Conversion(Decimal("460.00"), "EUR", Decimal("0.92")),
+    )
+
+    assert hits(incoming(), eur_out) == []
 
 
 def test_currency_without_threshold_does_not_trigger() -> None:

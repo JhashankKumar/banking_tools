@@ -166,6 +166,12 @@ def _alerts(ctx: ToolContext, _: NoArgs) -> dict[str, Any]:
                     if a.metrics.get("window_seconds", "").isdigit()
                     else None
                 ),
+                # Incoming to onward, readably ("5 m 28 s"), so answers can quote it.
+                "elapsed": (
+                    format_elapsed(int(a.metrics["elapsed_seconds"]))
+                    if a.metrics.get("elapsed_seconds", "").isdigit()
+                    else None
+                ),
                 "evidence_id": a.evidence_id,
             }
             for a in items

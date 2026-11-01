@@ -4,13 +4,13 @@ This is a **regression benchmark** on scenario families written by this project.
 
 Reproduce: `cd backend && uv run python -m app.benchmark --seed 20261101 --variants 50` (then compare `metrics` in `results.json`; only `meta` may differ).
 
-Generated 2026-10-30 by the code in the commit that contains this file · Python 3.12.3 · seed 20261101 · 50 variants per family · 750 variants in all.
+Generated 2026-11-01 by the code in the commit that contains this file · Python 3.12.3 · seed 20261101 · 50 variants per family · 800 variants in all.
 
-## Detection rule (RAPID_ONWARD_TRANSFER v1)
+## Detection rule (RAPID_ONWARD_TRANSFER v2)
 
 Window 1800 s, minimum onward share 0.50, minimum incoming INR 10000.00.
 
-Overall, per variant: precision 1.0000, recall 1.0000 (TP 250, FP 0, FN 0, TN 500). Per (incoming, onward) pair: TP 410, FP 0, FN 0.
+Overall, per variant: precision 1.0000, recall 1.0000 (TP 300, FP 0, FN 0, TN 500). Per (incoming, onward) pair: TP 460, FP 0, FN 0.
 
 | Family | Label | TP | FP | FN | TN | Precision | Recall | Pairs TP/FP/FN |
 |---|---|---|---|---|---|---|---|---|
@@ -29,6 +29,7 @@ Overall, per variant: precision 1.0000, recall 1.0000 (TP 250, FP 0, FN 0, TN 50
 | currency_mismatch | negative | 0 | 0 | 0 | 50 | n/a | n/a | 0/0/0 |
 | onward_before_incoming | negative | 0 | 0 | 0 | 50 | n/a | n/a | 0/0/0 |
 | benign_high_value | negative | 0 | 0 | 0 | 50 | n/a | n/a | 0/0/0 |
+| converted_onward | positive | 50 | 0 | 0 | 0 | 1.0000 | 1.0000 | 50/0/0 |
 
 ## Money paths
 

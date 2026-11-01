@@ -82,6 +82,30 @@ def test_unknown_tool_is_rejected_and_reported_to_model(ctx_for: Ctx) -> None:
     assert json.loads(tool_message.content or "") == {"error": "Unknown tool"}
 
 
+def test_case_id_argument_naming_this_case_is_accepted(ctx_for: Ctx) -> None:
+    provider = FakeModelProvider(
+        [fake_tool_call("get_alert_details", {"case_id": "FR-10482"}), fake_text(PLAIN)]
+    )
+
+    result = _run(provider, ctx_for("FR-10482"))
+
+    assert result.tool_names == ["get_alert_details"]
+
+
+def test_case_id_argument_naming_another_case_is_refused(ctx_for: Ctx) -> None:
+    provider = FakeModelProvider(
+        [fake_tool_call("get_alert_details", {"case_id": "FR-10486"}), fake_text(PLAIN)]
+    )
+
+    result = _run(provider, ctx_for("FR-10482"))
+
+    tool_message = provider.calls[1][0][-1]
+    assert json.loads(tool_message.content or "") == {
+        "error": "This chat can only read case FR-10482"
+    }
+    assert result.tool_names == []
+
+
 def test_tool_call_cap(ctx_for: Ctx) -> None:
     provider = FakeModelProvider(
         [fake_tool_call("get_case_summary", {}, call_id=f"c{i}") for i in range(7)]

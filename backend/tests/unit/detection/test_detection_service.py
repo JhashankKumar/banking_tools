@@ -33,7 +33,7 @@ def test_fr_10482_alert_created_from_rule(db_session: Session) -> None:
 
     assert (alert.rule_id, alert.rule_version, alert.rule_code) == (
         "RAPID_ONWARD_TRANSFER",
-        "1",
+        "2",
         "ROT",
     )
     assert alert.case_id == "FR-10482"
@@ -69,7 +69,7 @@ def test_detection_is_idempotent(db_session: Session) -> None:
     before = snapshot()
     summary = run_detection(db_session)
 
-    assert summary == {"RAPID_ONWARD_TRANSFER": 1}
+    assert summary == {"RAPID_ONWARD_TRANSFER": 6}  # one per seeded alert
     assert snapshot() == before
 
 
@@ -168,7 +168,7 @@ def test_detection_cli_prints_summary(
 ) -> None:
     main(open_session=lambda: nullcontext(db_session))
 
-    assert "RAPID_ONWARD_TRANSFER: 1" in capsys.readouterr().out
+    assert "RAPID_ONWARD_TRANSFER: 6" in capsys.readouterr().out
 
 
 def test_detection_run_is_audited(db_session: Session) -> None:
@@ -184,7 +184,7 @@ def test_detection_run_is_audited(db_session: Session) -> None:
     assert event.outcome == Outcome.SUCCESS
     assert event.actor_user_id is None
     assert event.details == {
-        "RAPID_ONWARD_TRANSFER": "1",
-        "rule_versions": "RAPID_ONWARD_TRANSFER:1",
+        "RAPID_ONWARD_TRANSFER": "6",
+        "rule_versions": "RAPID_ONWARD_TRANSFER:2",
         "new_alerts": "0",
     }

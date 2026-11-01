@@ -3,9 +3,13 @@
 const IST = "Asia/Kolkata";
 
 export function formatMoney(amount: string, currency: string): string {
-  // Intl formats decimal strings exactly; money is never converted to a float.
-  const format = new Intl.NumberFormat("en-IN", { style: "currency", currency })
-    .format as (value: string) => string;
+  // Intl formats decimal strings exactly; money is never converted to a float. Only the rupee
+  // gets a symbol: "$" alone could be any dollar, so other currencies show their ISO code.
+  const format = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    currencyDisplay: currency === "INR" ? "symbol" : "code",
+  }).format as (value: string) => string;
   return format(amount);
 }
 
