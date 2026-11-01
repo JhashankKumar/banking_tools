@@ -175,9 +175,15 @@ describe("CasePage", () => {
   });
 
   test("copilot panel lists the case's chats", async () => {
+    // Two chats: a case with exactly one opens it directly (see CopilotPanel tests).
+    const second = {
+      ...CHAT_SUMMARY_JSON,
+      id: "c0ffee00-0000-4000-8000-000000000002",
+      title: "Second look at TX-1002",
+    };
     stubCase({
       "/api/cases/FR-10482/chats": () =>
-        jsonResponse(page([CHAT_SUMMARY_JSON])),
+        jsonResponse(page([CHAT_SUMMARY_JSON, second])),
     });
     renderWithClient(<CasePage caseId="FR-10482" />);
 
@@ -185,6 +191,7 @@ describe("CasePage", () => {
     expect(
       await within(copilot).findByText("Where did the money go?"),
     ).toBeVisible();
-    expect(within(copilot).getByText(/FR-10482 · 1 chat/)).toBeVisible();
+    expect(within(copilot).getByText("Second look at TX-1002")).toBeVisible();
+    expect(within(copilot).getByText(/FR-10482 · 2 chats/)).toBeVisible();
   });
 });

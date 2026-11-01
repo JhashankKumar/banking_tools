@@ -20,6 +20,8 @@ import { loginFormSchema, type LoginForm as LoginValues } from "../schemas";
 /**
  * Only same-origin paths are honoured as a post-login destination. Control characters and
  * backslashes are rejected first because URL parsing strips or rewrites them (e.g. "/\t/evil").
+ * Reads `window`, so call it only in the browser (event handlers), never during render: this
+ * client component is also rendered on the server, where `window` does not exist.
  */
 function safeNext(value: string | null): string | null {
   if (!value || !value.startsWith("/") || /[\x00-\x1f\\]/.test(value))
@@ -32,13 +34,14 @@ function safeNext(value: string | null): string | null {
 
 export function LoginForm() {
   const router = useRouter();
-  const next = safeNext(useSearchParams().get("next"));
+  const rawNext = useSearchParams().get("next");
   const queryClient = useQueryClient();
   const [failure, setFailure] = useState<ApiError | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({ resolver: zodResolver(loginFormSchema) });
 
@@ -48,7 +51,11 @@ export function LoginForm() {
       await login(values);
       queryClient.removeQueries();
       const me = await queryClient.fetchQuery(meQuery);
-      router.replace(next ?? landingFor(me.role));
+      // With cacheComponents, Next keeps this route mounted but hidden after navigating away:
+      // clear the credentials now so they neither linger in memory nor reappear on sign-out.
+      reset();
+      setShowPassword(false);
+      router.replace(safeNext(rawNext) ?? landingFor(me.role));
     } catch (error) {
       setFailure(asApiError(error));
     }

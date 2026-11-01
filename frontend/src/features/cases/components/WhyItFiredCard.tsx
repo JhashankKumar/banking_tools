@@ -9,13 +9,41 @@ import type { Alert } from "@/features/alerts/schemas";
 import type { Rule } from "@/features/rules/schemas";
 import { formatElapsed, formatMoney } from "@/lib/format";
 
+/**
+ * Durations from one hour up read as hours ("5 h", "1 h 5 m"); shorter ones as everywhere else.
+ * Card-only: the copilot quotes `formatElapsed` wording and its answer checker relies on it.
+ */
+function formatDuration(seconds: number): string {
+  if (seconds < 3600) return formatElapsed(seconds);
+  const minutes = Math.floor(seconds / 60);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} m`;
+}
+
+// The backend already rounds ratios down to 2 dp; round here only to undo float error (0.57 * 100).
+const percent = (ratio: string) => `${Math.round(Number(ratio) * 100)} %`;
+
 function metricTiles(alert: Alert): [string, string][] {
   const m = alert.metrics;
   const tiles: [string, string][] = [];
   if (m.elapsed_seconds)
-    tiles.push(["Elapsed", formatElapsed(Number(m.elapsed_seconds))]);
+    tiles.push(["Elapsed", formatDuration(Number(m.elapsed_seconds))]);
   if (m.window_seconds)
-    tiles.push(["Window", formatElapsed(Number(m.window_seconds))]);
+    tiles.push(["Window", formatDuration(Number(m.window_seconds))]);
+  if (m.hops) tiles.push(["Hops", m.hops]);
+  if (m.payer_count) tiles.push(["Payers", m.payer_count]);
+  if (m.incoming_total && m.currency)
+    tiles.push(["Collected", formatMoney(m.incoming_total, m.currency)]);
+  if (m.start_amount && m.currency)
+    tiles.push(["Sent", formatMoney(m.start_amount, m.currency)]);
+  if (m.returned_amount && m.currency)
+    tiles.push(["Returned", formatMoney(m.returned_amount, m.currency)]);
+  if (m.outgoing_count) tiles.push(["Transfers", m.outgoing_count]);
+  if (m.outgoing_total && m.currency)
+    tiles.push(["Sent on", formatMoney(m.outgoing_total, m.currency)]);
+  const share = m.onward_share ?? m.return_ratio;
+  if (share) tiles.push(["Share", percent(share)]);
   // `currency` is the one the rule compared in; each amount keeps its own when they differ.
   const inCurrency = m.incoming_currency ?? m.currency;
   const outCurrency = m.outgoing_currency ?? m.currency;
