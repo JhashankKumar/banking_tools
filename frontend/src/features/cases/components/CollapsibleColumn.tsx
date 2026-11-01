@@ -9,6 +9,7 @@ export function CollapsibleColumn({
   open,
   onToggle,
   width,
+  className = "",
   children,
 }: {
   side: "left" | "right";
@@ -17,6 +18,8 @@ export function CollapsibleColumn({
   open: boolean;
   onToggle: (open: boolean) => void;
   width: string;
+  /** Extra classes for the open column, e.g. its own scrolling. */
+  className?: string;
   children: ReactNode;
 }) {
   if (!open) {
@@ -37,12 +40,14 @@ export function CollapsibleColumn({
     );
   }
   return (
-    <div className={`flex shrink-0 flex-col gap-4 ${width}`}>
+    <div
+      className={`flex min-h-0 shrink-0 flex-col gap-4 ${width} ${className}`}
+    >
       <button
         type="button"
         aria-label={`Collapse ${label}`}
         onClick={() => onToggle(false)}
-        className={`flex items-center gap-1 text-[11px] text-muted hover:text-ink ${side === "left" ? "self-end" : "self-start"}`}
+        className={`flex shrink-0 items-center gap-1 text-[11px] text-muted hover:text-ink ${side === "left" ? "self-end" : "self-start"}`}
       >
         {side === "left" ? (
           <ChevronLeft size={12} />
