@@ -9,6 +9,7 @@ from typing import Any
 from app.benchmark.families import CONFIG, FAMILIES, generate
 from app.benchmark.grounding import score_grounding
 from app.benchmark.metrics import score_paths, score_rule
+from app.modules.detection.rules.rapid_onward_transfer import RapidOnwardTransfer
 from app.modules.graph.paths import PathParams
 
 NOT_RUN = {"status": "not run (no key)"}
@@ -38,7 +39,7 @@ def build_report(seed: int, variants: int, *, live: dict[str, Any] | None = None
             "seed": seed,
             "variants_per_family": variants,
             "command": command(seed, variants),
-            "rule": "RAPID_ONWARD_TRANSFER v1",
+            "rule": f"RAPID_ONWARD_TRANSFER v{RapidOnwardTransfer.version}",
             "rule_window_seconds": int(CONFIG.window.total_seconds()),
             "rule_min_onward_ratio": f"{CONFIG.min_onward_ratio:.2f}",
             "rule_min_incoming_inr": f"{CONFIG.min_incoming_amount['INR']:.2f}",
@@ -77,7 +78,7 @@ def _markdown(r: dict[str, Any]) -> str:
         f"{r['meta']['python']} · seed {p['seed']} · {p['variants_per_family']} variants per "
         f"family · {sum(r['variants'].values())} variants in all.",
         "",
-        "## Detection rule (RAPID_ONWARD_TRANSFER v1)",
+        f"## Detection rule ({p['rule']})",
         "",
         f"Window {p['rule_window_seconds']} s, minimum onward share {p['rule_min_onward_ratio']}, "
         f"minimum incoming INR {p['rule_min_incoming_inr']}.",

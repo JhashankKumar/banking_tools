@@ -131,6 +131,10 @@ def _execute(ctx: ToolContext, call: ToolCall) -> tuple[dict[str, Any], ToolResu
         return {"error": "Arguments were not valid JSON"}, None
     if not isinstance(args, dict):
         return {"error": "Arguments must be a JSON object"}, None
+    # Tools are bound to the chat's case; models still often pass it. Same case: drop it.
+    if "case_id" in args:
+        if args.pop("case_id") != ctx.case_id:  # pyright: ignore[reportUnknownMemberType]
+            return {"error": f"This chat can only read case {ctx.case_id}"}, None
     if not has_permission(ctx.user.role, tool.permission):
         return {"error": "Not permitted for your role"}, None
     try:

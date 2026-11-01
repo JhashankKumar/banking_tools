@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
-from app.modules.detection.facts import PartyKey, TransactionFact
+from app.modules.detection.facts import Conversion, PartyKey, TransactionFact
 from app.modules.detection.rules.rapid_onward_transfer import RapidOnwardTransferConfig
 from app.modules.transactions.models import TransactionStatus
 
@@ -66,6 +66,7 @@ class _Builder:
         status: TransactionStatus = TransactionStatus.SETTLED,
         reversed_by: tuple[str, ...] = (),
         reverses: str | None = None,
+        converted: Conversion | None = None,
     ) -> TransactionFact:
         self.count += 1
         return TransactionFact(
@@ -79,6 +80,7 @@ class _Builder:
             reversed_by=reversed_by,
             reverses=reverses,
             rail="IMPS",
+            converted=converted,
         )
 
     def incoming(self) -> Decimal:
@@ -196,6 +198,23 @@ def _pair(
     return _variant(name, i, [inc, out])
 
 
+def _converted_onward(b: _Builder, i: int) -> Variant:
+    """INR in, USD out; the onward record states its INR cost and rate (variant 0: exactly 50 %)."""
+    amount = b.incoming()
+    inr = (amount * RATIO).quantize(CENT) if i == 0 else b.onward(amount)
+    rate = b.amount(Decimal("82.00"), Decimal("84.99"))
+    inc = b.tx(b.acc("S"), b.acc("M"), amount, 0)
+    out = b.tx(
+        b.acc("M"),
+        b.ben("D"),
+        (inr / rate).quantize(CENT),
+        b.elapsed(),
+        currency="USD",
+        converted=Conversion(inr, "INR", rate),
+    )
+    return _variant("converted_onward", i, [inc, out], pairs=[(inc, out)])
+
+
 def _onward_after_window(b: _Builder, i: int) -> Variant:
     late = WINDOW_S + (1 if i == 0 else b.rng.randint(1, 600))
     return _pair("onward_after_window", b, i, elapsed=late)
@@ -300,6 +319,13 @@ FAMILIES: tuple[Family, ...] = (
     ),
     Family(
         "benign_high_value", "One large transfer, nothing sent on.", "negative", _benign_high_value
+    ),
+    # Appended, not grouped with the positives: a family's position sets its IDs.
+    Family(
+        "converted_onward",
+        "INR in, USD out; the transfer records its INR cost and rate.",
+        "positive",
+        _converted_onward,
     ),
 )
 
