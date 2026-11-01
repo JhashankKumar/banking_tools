@@ -6,7 +6,7 @@ export const ALERT_JSON = {
   id: "AL-ROT-TX-1002",
   rule: {
     id: "RAPID_ONWARD_TRANSFER",
-    version: "1",
+    version: "2",
     title: "Rapid onward transfer",
   },
   entity: { type: "beneficiary", id: "BEN-B" },
@@ -87,7 +87,7 @@ export const TRANSACTIONS_JSON = [
 export const RULES_JSON = [
   {
     id: "RAPID_ONWARD_TRANSFER",
-    version: "1",
+    version: "2",
     code: "ROT",
     title: "Rapid onward transfer",
     description:

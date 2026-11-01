@@ -1,6 +1,7 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { QueryView } from "@/components/ui/QueryView";
@@ -23,7 +24,8 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /**
  * Case-scoped copilot. One top-right button: "+ New chat" on the list of chats, "‹ Chats"
- * inside a chat (back to the list).
+ * inside a chat (back to the list). Fills its column: the conversation scrolls between the
+ * header and a pinned ask box, oldest first, and follows the newest message.
  */
 export function CopilotPanel({
   caseId,
@@ -42,13 +44,19 @@ export function CopilotPanel({
       : p.view === "new"
         ? "New chat"
         : (p.chat.data?.title ?? "Chat");
+  const messageCount = p.chat.data?.messages.length ?? 0;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && p.view !== "list") el.scrollTop = el.scrollHeight;
+  }, [p.view, p.chat.data?.id, messageCount, p.pending, p.error]);
 
   return (
     <section
       aria-label="AI copilot"
-      className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 shadow-sm"
+      className="flex min-h-0 flex-1 flex-col gap-3 rounded-xl border border-line bg-surface p-4 shadow-sm"
     >
-      <header className="flex items-center gap-2">
+      <header className="flex shrink-0 items-center gap-2">
         <Sparkles aria-hidden size={16} className="shrink-0 text-primary" />
         <h2 className="min-w-0 truncate text-sm font-semibold text-ink">
           {title ?? (
@@ -74,93 +82,101 @@ export function CopilotPanel({
         </button>
       </header>
 
-      {p.view === "list" && (
-        <QueryView query={p.chats} noun="Chats" loading="Loading chats">
-          {(data) => <ChatList chats={data.items} onOpen={p.openChat} />}
-        </QueryView>
-      )}
+      <div
+        ref={scrollRef}
+        role={p.view === "list" ? undefined : "log"}
+        aria-label={p.view === "list" ? undefined : "Conversation"}
+        className="-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-1"
+      >
+        {p.view === "list" && (
+          <QueryView query={p.chats} noun="Chats" loading="Loading chats">
+            {(data) => <ChatList chats={data.items} onOpen={p.openChat} />}
+          </QueryView>
+        )}
 
-      {p.view === "new" && (
-        <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted">
-            Ask about {caseId}. I analyse the fraud signal only and cite
-            evidence IDs.
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {SUGGESTED_QUESTIONS.map((q) => (
-              <button
-                key={q}
-                type="button"
-                disabled={p.pending}
-                onClick={() => p.ask(q)}
-                className="rounded-full border border-primary px-2 py-0.5 text-[11px] text-primary disabled:opacity-60"
-              >
-                {q}
-              </button>
-            ))}
+        {p.view === "new" && (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-muted">
+              Ask about {caseId}. I analyse the fraud signal only and cite
+              evidence IDs.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {SUGGESTED_QUESTIONS.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  disabled={p.pending}
+                  onClick={() => p.ask(q)}
+                  className="rounded-full border border-primary px-2 py-0.5 text-[11px] text-primary disabled:opacity-60"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {p.view === "chat" && (
-        <QueryView query={p.chat} noun="Chat" loading="Loading chat">
-          {(chat) => (
-            <div className="flex flex-col gap-2.5">
-              {chat.messages.map((m) =>
-                m.role === "user" ? (
-                  <p
-                    key={m.id}
-                    className="max-w-[85%] self-end rounded-xl rounded-br-sm bg-primary px-2.5 py-1.5 text-xs text-on-primary"
-                  >
-                    {m.question}
-                  </p>
-                ) : m.answer?.kind === "decline" ? (
-                  <DeclineCard
-                    key={m.id}
-                    answer={m.answer}
-                    onAsk={chat.isOwn ? p.ask : undefined}
-                  />
-                ) : (
-                  m.answer && (
-                    <AnswerView
+        {p.view === "chat" && (
+          <QueryView query={p.chat} noun="Chat" loading="Loading chat">
+            {(chat) => (
+              <div className="mt-auto flex flex-col gap-2.5">
+                {chat.messages.map((m) =>
+                  m.role === "user" ? (
+                    <p
+                      key={m.id}
+                      className="max-w-[85%] self-end rounded-xl rounded-br-sm bg-primary px-2.5 py-1.5 text-xs text-on-primary"
+                    >
+                      {m.question}
+                    </p>
+                  ) : m.answer?.kind === "decline" ? (
+                    <DeclineCard
                       key={m.id}
                       answer={m.answer}
-                      onSelectTransaction={onSelectTransaction}
-                      onSave={
-                        chat.isOwn && onSaveAsNote && m.answer
-                          ? () => onSaveAsNote(m.id, m.answer as CopilotAnswer)
-                          : undefined
-                      }
+                      onAsk={chat.isOwn ? p.ask : undefined}
                     />
-                  )
-                ),
-              )}
-              {!chat.isOwn && (
-                <p className="rounded-lg bg-raised px-2.5 py-1.5 text-[11px] text-muted">
-                  Read-only: {chat.authorUsername}&apos;s chat.
-                </p>
-              )}
-            </div>
-          )}
-        </QueryView>
-      )}
+                  ) : (
+                    m.answer && (
+                      <AnswerView
+                        key={m.id}
+                        answer={m.answer}
+                        onSelectTransaction={onSelectTransaction}
+                        onSave={
+                          chat.isOwn && onSaveAsNote && m.answer
+                            ? () =>
+                                onSaveAsNote(m.id, m.answer as CopilotAnswer)
+                            : undefined
+                        }
+                      />
+                    )
+                  ),
+                )}
+                {!chat.isOwn && (
+                  <p className="rounded-lg bg-raised px-2.5 py-1.5 text-[11px] text-muted">
+                    Read-only: {chat.authorUsername}&apos;s chat.
+                  </p>
+                )}
+              </div>
+            )}
+          </QueryView>
+        )}
 
-      {p.pending && (
-        <p role="status" className="text-[11px] text-muted">
-          Checking the case records…
-        </p>
-      )}
-      {p.error && (
-        <div className="flex flex-col gap-1">
-          <ErrorBanner error={p.error} />
-          {p.error.retryAfter !== null && (
-            <p className="text-[11px] text-muted">
-              Try again in {Math.max(1, Math.ceil(p.error.retryAfter / 60))}{" "}
-              min.
-            </p>
-          )}
-        </div>
-      )}
+        {p.pending && (
+          <p role="status" className="text-[11px] text-muted">
+            Checking the case records…
+          </p>
+        )}
+        {p.error && (
+          <div className="flex flex-col gap-1">
+            <ErrorBanner error={p.error} />
+            {p.error.retryAfter !== null && (
+              <p className="text-[11px] text-muted">
+                Try again in {Math.max(1, Math.ceil(p.error.retryAfter / 60))}{" "}
+                min.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {(p.view === "new" || (p.view === "chat" && p.chat.data?.isOwn)) && (
         <AskBox
