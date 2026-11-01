@@ -197,8 +197,10 @@ def test_money_paths_view_is_audited_with_parameters(
     }
 
 
-def test_existing_alert_counts_unchanged_by_fr_10484(db_session: Session) -> None:
-    assert db_session.scalars(select(Alert.id).where(Alert.case_id == "FR-10484")).all() == []
+def test_fr_10484_cycle_raises_only_the_circular_flow_alert(db_session: Session) -> None:
+    # Hops are hours apart, so RAPID_ONWARD_TRANSFER stays silent; CIRCULAR_FLOW catches the cycle.
+    alerts = db_session.scalars(select(Alert.id).where(Alert.case_id == "FR-10484")).all()
+    assert alerts == ["AL-CIR-TX-4003"]
 
 
 def test_fact_load_is_row_limited(db_session: Session) -> None:
