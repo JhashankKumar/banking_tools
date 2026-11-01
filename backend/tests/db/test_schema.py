@@ -82,6 +82,48 @@ def test_transaction_currency_must_be_three_uppercase_letters(db_session: Sessio
 
 
 @pytest.mark.usefixtures("parties")
+def test_transaction_conversion_is_all_or_nothing(db_session: Session) -> None:
+    usd = {"amount": Decimal("500.00"), "currency": "USD"}
+    assert_rejected(db_session, make_transaction(**usd, fx_rate=Decimal("83.45")))
+    assert_rejected(
+        db_session,
+        make_transaction(**usd, converted_amount=Decimal("41725.00"), converted_currency="INR"),
+    )
+
+
+@pytest.mark.usefixtures("parties")
+def test_transaction_conversion_must_be_into_another_currency(db_session: Session) -> None:
+    assert_rejected(
+        db_session,
+        make_transaction(
+            converted_amount=Decimal("48500.00"), converted_currency="INR", fx_rate=Decimal("1")
+        ),
+    )
+
+
+@pytest.mark.usefixtures("parties")
+def test_transaction_conversion_round_trips(db_session: Session) -> None:
+    db_session.add(
+        make_transaction(
+            amount=Decimal("500.00"),
+            currency="USD",
+            converted_amount=Decimal("41725.00"),
+            converted_currency="INR",
+            fx_rate=Decimal("83.45"),
+        )
+    )
+    db_session.flush()
+    db_session.expire_all()
+
+    tx = db_session.get_one(Transaction, "TX-T1")
+    assert (tx.converted_amount, tx.converted_currency, tx.fx_rate) == (
+        Decimal("41725.00"),
+        "INR",
+        Decimal("83.450000"),
+    )
+
+
+@pytest.mark.usefixtures("parties")
 def test_amount_round_trips_as_decimal(db_session: Session) -> None:
     db_session.add(make_transaction())
     db_session.flush()

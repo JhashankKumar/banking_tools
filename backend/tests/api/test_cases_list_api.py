@@ -27,7 +27,7 @@ def test_analyst_lists_cases(client: TestClient, analyst: dict[str, str]) -> Non
 
     assert response.status_code == 200
     body = response.json()
-    assert body["page"] == {"total": 6, "limit": 50, "offset": 0}
+    assert body["page"] == {"total": 11, "limit": 50, "offset": 0}
     by_id = {c["id"]: c for c in body["data"]}
     assert by_id["FR-10482"] == {
         "id": "FR-10482",

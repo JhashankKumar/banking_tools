@@ -13,7 +13,7 @@ def test_rules_catalog_lists_rapid_onward_transfer(client: TestClient, db_sessio
     assert response.status_code == 200
     [rule] = response.json()["data"]
     assert rule["id"] == "RAPID_ONWARD_TRANSFER"
-    assert (rule["version"], rule["code"], rule["title"]) == ("1", "ROT", "Rapid onward transfer")
+    assert (rule["version"], rule["code"], rule["title"]) == ("2", "ROT", "Rapid onward transfer")
     assert rule["false_positive_caveats"]
     assert "status" in rule["required_fields"]
     assert rule["parameters"] == {
