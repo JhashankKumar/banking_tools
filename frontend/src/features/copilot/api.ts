@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api-client";
 import { asApiError } from "@/lib/api-error";
+import { COPILOT_TIMEOUT_MS } from "@/lib/config";
 import { envelope, pageEnvelope } from "@/lib/schemas";
 
 import { askOutSchema, chatSchema, chatSummarySchema } from "./schemas";
@@ -32,6 +33,7 @@ export const askQuestion = (caseId: string, body: AskBody) =>
     `${casePath(caseId)}/copilot/questions`,
     { chat_id: body.chatId, question: body.question },
     envelope(askOutSchema),
+    { timeoutMs: COPILOT_TIMEOUT_MS },
   );
 
 /** The chat that kept the question when asking failed (503 or a limit), so a retry asks there. */

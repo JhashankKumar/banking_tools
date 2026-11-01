@@ -23,7 +23,7 @@ Rules must be:
 
 - **Pure and deterministic.** `evaluate` reads only the `TransactionFact`s it is given: no database, clock, network, or randomness. The same facts in any order give the same hits in the same order.
 - **Completed-movement only.** Only normalized status `posted` or `settled` counts as money that moved, and a transaction with a reversal record pointing at it is treated as not completed (`facts.is_completed`). Pending, failed, reversed, returned, and disputed records never satisfy a condition.
-- **Currency-safe.** Amounts in different currencies are never compared or combined. Thresholds are per currency; a currency without a configured threshold is out of scope for that rule.
+- **Currency-safe.** Amounts in different currencies are compared only through a conversion **recorded on the transaction** (`converted_amount`, `converted_currency`, `fx_rate`: the amount and rate the source system applied). Rules never look up, estimate or invent an exchange rate; without a recorded conversion, different currencies are not compared. Thresholds are per currency; a currency without a configured threshold is out of scope for that rule.
 - **Decimal-only** for money arithmetic.
 - **Explained.** Each hit carries `metrics` (the numbers that satisfied the condition, as strings) and an `explanation` sentence built only from those numbers, ending with "Signal for analyst review; not a finding of fraud."
 - **Traceable.** `transaction_ids` lists every record the hit rests on.
@@ -50,15 +50,16 @@ Run it with `uv run python -m app.modules.detection`. The seed runs it automatic
 
 ---
 
-## RAPID_ONWARD_TRANSFER (v1, code `ROT`)
+## RAPID_ONWARD_TRANSFER (v2, code `ROT`)
 
 **Condition.** For each completed transfer `out`, find the most recent completed transfer `inc` such that:
 
 - `inc` was received by the party that sends `out` (`inc.destination == out.source`);
 - `inc` happened at or before `out`, and no more than **window** earlier;
-- same currency, and that currency has a minimum incoming amount configured;
-- `inc.amount ≥ min_incoming_amount[currency]`;
-- `out.amount ≥ inc.amount × min_onward_ratio`;
+- both amounts can be put in one currency C: the same currency, or one of the two records carries a recorded conversion into the other's currency (that converted amount is used);
+- C has a minimum incoming amount configured;
+- `inc` in C ≥ `min_incoming_amount[C]`;
+- `out` in C ≥ `inc` in C × `min_onward_ratio`;
 - `inc` is not itself a reversal record (a reversal returns funds; it is not new incoming money);
 - `out` does not go to **anyone** who sent the party a completed transfer within the window (that looks like a refund, not onward movement), even if a different incoming would otherwise pair.
 
@@ -72,7 +73,9 @@ At most one hit per outgoing transfer. Ties at the same timestamp are ordered by
 | `min_onward_ratio`    | `0.50`                               |
 | `min_incoming_amount` | `INR: 10000.00`                      |
 
-**Metrics.** `elapsed_seconds`, `incoming_transaction_id`, `incoming_amount`, `outgoing_transaction_id`, `outgoing_amount`, `currency`, `window_seconds`, `min_onward_ratio`.
+**Metrics.** `elapsed_seconds`, `incoming_transaction_id`, `incoming_amount`, `outgoing_transaction_id`, `outgoing_amount`, `currency` (C, the currency compared in), `window_seconds`, `min_onward_ratio`. When a recorded conversion was used, also `incoming_currency`, `outgoing_currency`, `converted_transaction_id`, `converted_amount` (in C) and `fx_rate`; the explanation then names them, e.g. "sent USD 1000.00 (INR 83450.00 at the recorded rate 83.45)".
+
+**Version history.** v1 compared same-currency transfers only. v2 (2026-11-01) adds recorded conversions; same-currency results are unchanged. Alerts keep the version they were raised with.
 
 **False-positive caveats.** Salary, payroll, or business pass-through accounts; payment aggregators and merchants settling onward; family or household transfers in quick succession; records missing from the dataset (fees, other transfers, holds).
 
@@ -84,3 +87,5 @@ At most one hit per outgoing transfer. Ties at the same timestamp are ordered by
 | FR-10483 | TX-3001 ACC-301 → BEN-301 INR 950,000.00, scheduled supplier payment                                                         | No alert: a high amount alone is not onward movement.                                                                                                                            |
 | FR-10485 | TX-5001 ACC-501 → BEN-501 INR 20,000.00; TX-5003 BEN-501 → ACC-502 INR 19,000.00 ten minutes later; TX-5002 reverses TX-5001 | No alert: the incoming transfer was reversed, so it does not count as completed.                                                                                                 |
 | FR-10486 | Single transfer with instruction-like description                                                                            | No alert.                                                                                                                                                                        |
+| FR-10490 | INR 2,00,000 in, then five transfers of INR 38,000–40,000                                                                    | No alert: no single onward transfer reaches 50 %. A known blind spot, not a clean result.                                                                                       |
+| FR-10493 | TX-9301 → BEN-932 INR 85,000.00; TX-9302 BEN-932 → ACC-933 USD 1,000.00 recorded as INR 83,450.00 at 83.45, 8 min later      | Alert `AL-ROT-TX-9302` through the recorded conversion (98 % sent on).                                                                                                           |

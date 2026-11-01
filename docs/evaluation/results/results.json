@@ -3,7 +3,7 @@
     "status": "not run (no key)"
   },
   "meta": {
-    "generated_at": "2026-10-30",
+    "generated_at": "2026-11-01",
     "python": "3.12.3"
   },
   "metrics": {
@@ -117,6 +117,21 @@
             "fn": 0,
             "fp": 0,
             "tp": 100
+          },
+          "precision": 1.0,
+          "recall": 1.0,
+          "variants": {
+            "fn": 0,
+            "fp": 0,
+            "tn": 0,
+            "tp": 50
+          }
+        },
+        "converted_onward": {
+          "pairs": {
+            "fn": 0,
+            "fp": 0,
+            "tp": 50
           },
           "precision": 1.0,
           "recall": 1.0,
@@ -327,7 +342,7 @@
         "pairs": {
           "fn": 0,
           "fp": 0,
-          "tp": 410
+          "tp": 460
         },
         "precision": 1.0,
         "recall": 1.0,
@@ -335,7 +350,7 @@
           "fn": 0,
           "fp": 0,
           "tn": 500,
-          "tp": 250
+          "tp": 300
         }
       }
     }
@@ -344,7 +359,7 @@
     "command": "cd backend && uv run python -m app.benchmark --seed 20261101 --variants 50",
     "path_max_hops": 3,
     "path_window_hours": 24,
-    "rule": "RAPID_ONWARD_TRANSFER v1",
+    "rule": "RAPID_ONWARD_TRANSFER v2",
     "rule_min_incoming_inr": "10000.00",
     "rule_min_onward_ratio": "0.50",
     "rule_window_seconds": 1800,
@@ -354,6 +369,7 @@
   "variants": {
     "benign_high_value": 50,
     "circular": 50,
+    "converted_onward": 50,
     "currency_mismatch": 50,
     "duplicate_incoming": 50,
     "failed_incoming": 50,
